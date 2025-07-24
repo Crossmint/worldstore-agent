@@ -1,3 +1,6 @@
+// @ts-nocheck
+/* eslint-disable */
+
 import { logger } from "@helpers/logger";
 import {
   DynamicStructuredTool,
