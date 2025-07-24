@@ -1,24 +1,27 @@
 import Redis from "ioredis";
 import { logger } from "./logger";
 import { UserProfile } from "../lib/types";
+import { validateEnvironment } from "./client";
+
+const { REDIS_URL } = validateEnvironment(["REDIS_URL"]);
 
 class RedisClient {
   private client: Redis;
   private isConnected = false;
 
   constructor() {
-    const redisConfig = {
-      host: process.env.REDIS_HOST ?? "localhost",
-      port: parseInt(process.env.REDIS_PORT ?? "6379"),
-      password: process.env.REDIS_PASSWORD,
-      db: parseInt(process.env.REDIS_DB ?? "0"),
-      retryDelayOnFailover: 100,
-      enableReadyCheck: true,
-      maxRetriesPerRequest: 3,
-      lazyConnect: true,
-    };
+    // const redisConfig = {
+    //   host: process.env.REDIS_HOST ?? "localhost",
+    //   port: parseInt(process.env.REDIS_PORT ?? "6379"),
+    //   password: process.env.REDIS_PASSWORD,
+    //   db: parseInt(process.env.REDIS_DB ?? "0"),
+    //   retryDelayOnFailover: 100,
+    //   enableReadyCheck: true,
+    //   maxRetriesPerRequest: 3,
+    //   lazyConnect: true,
+    // };
 
-    this.client = new Redis(redisConfig);
+    this.client = new Redis(REDIS_URL);
 
     this.client.on("connect", () => {
       logger.info("Redis connected successfully");
