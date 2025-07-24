@@ -1,0 +1,3 @@
+packages:
+  - "402-server"
+  - "xmtp-agent"
