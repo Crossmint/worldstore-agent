@@ -5,6 +5,7 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
+    "build": "echo 'No build step required'",
     "dev": "nodemon src/server.js",
     "test": "jest",
     "example": "node examples/client.js",
