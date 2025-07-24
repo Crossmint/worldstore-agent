@@ -27,10 +27,7 @@ import { redisClient } from "./helpers/redis";
 import { migrateToRedis } from "./helpers/migration";
 import { getTools } from "@lib/tools";
 import { orderProductTool } from "@lib/tools/product";
-import {
-  DynamicStructuredTool,
-  type StructuredToolInterface,
-} from "@langchain/core/tools";
+import { DynamicStructuredTool } from "@langchain/core/tools";
 import { USDCHandler } from "@helpers/usdc";
 import z from "zod";
 
@@ -115,7 +112,7 @@ class XMTPShoppingBot {
     }
   }
 
-  private wrapOrderProductTool(): StructuredToolInterface {
+  private wrapOrderProductTool(): any {
     const originalTool = orderProductTool();
 
     return new DynamicStructuredTool({

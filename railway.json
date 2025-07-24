@@ -1,6 +1,0 @@
-{
-  "deploy": {
-    "startCommand": "echo 'Use individual service configs'",
-    "healthcheckPath": "/health"
-  }
-}

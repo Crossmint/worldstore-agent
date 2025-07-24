@@ -2,7 +2,7 @@ import { logger } from "@helpers/logger";
 import { saveUserProfile } from "@helpers/saveUserProfile";
 import { getOnChainTools } from "@goat-sdk/adapter-langchain";
 import { viem } from "@goat-sdk/wallet-viem";
-import { UserProfile } from "./types";
+import { UserProfile } from "@lib/types";
 import { getWalletClientForUser } from "@helpers/getWalletClientForUser";
 
 export const getUserOnchainTools = async (

@@ -3,7 +3,7 @@ builder = "nixpacks"
 buildCommand = "pnpm install"
 
 [deploy]
-startCommand = "pnpm run dev"
+startCommand = "pnpm run prod"
 restartPolicyType = "always"
 
 [[services]]

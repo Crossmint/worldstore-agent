@@ -7,20 +7,19 @@
     "allowSyntheticDefaultImports": true,
     "strict": false,
     "skipLibCheck": true,
+    "noEmit": true,
     "rootDir": ".",
-    "outDir": "agent/dist",
     "baseUrl": ".",
     "paths": {
       "@helpers/*": ["./helpers/*"],
       "@lib/*": ["./lib/*"]
     },
+    "typeRoots": ["./node_modules/@types", "./types"],
     "noImplicitAny": false,
     "strictNullChecks": false,
     "strictFunctionTypes": false,
-    "noImplicitReturns": false,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false
+    "noImplicitReturns": false
   },
-  "include": ["./**/*"],
-  "exclude": ["node_modules", "agent/dist", ".data"]
+  "include": ["./**/*", "./types.d.ts"],
+  "exclude": ["node_modules", "dist", ".data"]
 }

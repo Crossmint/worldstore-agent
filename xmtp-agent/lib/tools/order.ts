@@ -1,11 +1,5 @@
-// @ts-nocheck
-/* eslint-disable */
-
 import { logger } from "@helpers/logger";
-import {
-  DynamicStructuredTool,
-  type StructuredToolInterface,
-} from "@langchain/core/tools";
+import { DynamicStructuredTool } from "@langchain/core/tools";
 import { z } from "zod";
 import { WORLDSTORE_API_URL } from "@helpers/constants";
 import { orderStatusToolSchema, readProfileToolSchema } from "../types";
@@ -13,7 +7,7 @@ import { loadUserOrders } from "@helpers/loadUserOrders";
 // @ts-ignore - Using Node.js 18+ global fetch
 declare const fetch: any;
 
-export const getUserOrderHistoryTool = (): StructuredToolInterface => {
+export const getUserOrderHistoryTool = (): any => {
   return new DynamicStructuredTool({
     name: "get_user_order_history",
     description: `Get the user's complete order history.
@@ -78,7 +72,7 @@ Next step: Use search_product to find items to purchase, then use order_product 
     },
   });
 };
-export const getOrderStatusTool = (): StructuredToolInterface => {
+export const getOrderStatusTool = (): any => {
   return new DynamicStructuredTool({
     name: "get_order_status",
     description: `Check the status of a specific order using its order ID.

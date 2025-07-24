@@ -1,10 +1,6 @@
-// @ts-nocheck
-/* eslint-disable */
-
 import { logger } from "@helpers/logger";
 import {
-  DynamicStructuredTool,
-  type StructuredToolInterface,
+  DynamicStructuredTool 
 } from "@langchain/core/tools";
 import { z } from "zod";
 import { loadUserProfile } from "@helpers/loadUserProfile";
@@ -26,7 +22,7 @@ declare const fetch: any;
 
 const { SERPAPI_API_KEY } = validateEnvironment(["SERPAPI_API_KEY"]);
 
-export const orderProductTool = (): StructuredToolInterface => {
+export const orderProductTool = (): any => {
   return new DynamicStructuredTool({
     name: "order_product",
     description: `Order Amazon products for users with complete profiles. Use this tool for purchase requests and standalone ASINs.
@@ -191,8 +187,6 @@ CRITICAL: Only call when user explicitly requests to purchase a specific ASIN.`,
               shortfall: Math.floor(
                 (requiredAmount - currentBalance) * Math.pow(10, 6)
               ).toString(),
-              recipientAddress: paymentRequirements.asset,
-              walletAddress: userWallet.account.address,
               current: currentBalance.toFixed(6),
               required: requiredAmount.toFixed(6),
               asin,
@@ -200,6 +194,7 @@ CRITICAL: Only call when user explicitly requests to purchase a specific ASIN.`,
           }
 
           const signature = await userWallet.signTypedData({
+            account: userWallet.account,
             domain,
             types,
             primaryType: "TransferWithAuthorization",
@@ -299,7 +294,7 @@ CRITICAL: Only call when user explicitly requests to purchase a specific ASIN.`,
   });
 };
 
-export const searchProductTool = (): StructuredToolInterface => {
+export const searchProductTool = (): any => {
   return new DynamicStructuredTool({
     name: "search_product",
     description: `Search for products on Amazon.com. Use this tool to search for products on Amazon.com.
