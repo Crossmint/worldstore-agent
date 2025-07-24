@@ -25,7 +25,7 @@ This tool reads the actual order history from storage and formats it for display
     schema: readProfileToolSchema,
     func: async ({ userInboxId }: z.infer<typeof readProfileToolSchema>) => {
       try {
-        const orderHistory = loadUserOrders(userInboxId);
+        const orderHistory = await loadUserOrders(userInboxId);
 
         if (!orderHistory || orderHistory.length === 0) {
           return `📦 Order History

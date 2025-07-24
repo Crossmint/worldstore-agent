@@ -251,7 +251,7 @@ CRITICAL: Only call when user explicitly requests to purchase a specific ASIN.`,
           // Return formatted string response instead of raw JSON to prevent LLM confusion
           if (paymentResponse.ok) {
             logger.success("Order created successfully", { response });
-            saveUserOrderId({
+            await saveUserOrderId({
               profile: userProfile,
               order: {
                 asin,

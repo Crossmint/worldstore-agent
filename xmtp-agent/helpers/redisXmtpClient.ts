@@ -5,12 +5,12 @@ import { getEncryptionKeyFromHex } from "./client";
 
 export class RedisXmtpClient {
   private client: Client | null = null;
-  private signerIdentifier: string = "";
+  private signerIdentifier = "";
   private env: XmtpEnv;
 
   constructor(
-    private signer: Signer,
-    private encryptionKey: string,
+    // private signer: Signer,
+    // private encryptionKey: string,
     env: XmtpEnv
   ) {
     this.env = env;
@@ -30,41 +30,41 @@ export class RedisXmtpClient {
     logger.info(`Initializing Redis-backed XMTP client for ${clientKey}`);
 
     // Create custom storage adapter for Redis
-    const redisStorageAdapter = {
-      async get(key: string): Promise<Uint8Array | null> {
-        const data = await redisClient.loadXMTpData(`${clientKey}:${key}`);
-        return data ? new Uint8Array(Buffer.from(data, "base64")) : null;
-      },
+    // const redisStorageAdapter = {
+    //   async get(key: string): Promise<Uint8Array | null> {
+    //     const data = await redisClient.loadXMTpData(`${clientKey}:${key}`);
+    //     return data ? new Uint8Array(Buffer.from(data, "base64")) : null;
+    //   },
 
-      async set(key: string, value: Uint8Array): Promise<void> {
-        const base64Data = Buffer.from(value).toString("base64");
-        await redisClient.saveXMTpData(`${clientKey}:${key}`, base64Data);
-      },
+    //   async set(key: string, value: Uint8Array): Promise<void> {
+    //     const base64Data = Buffer.from(value).toString("base64");
+    //     await redisClient.saveXMTpData(`${clientKey}:${key}`, base64Data);
+    //   },
 
-      async delete(key: string): Promise<void> {
-        await redisClient.deleteXMTpData(`${clientKey}:${key}`);
-      },
+    //   async delete(key: string): Promise<void> {
+    //     await redisClient.deleteXMTpData(`${clientKey}:${key}`);
+    //   },
 
-      async has(key: string): Promise<boolean> {
-        const data = await redisClient.loadXMTpData(`${clientKey}:${key}`);
-        return data !== null;
-      },
+    //   async has(key: string): Promise<boolean> {
+    //     const data = await redisClient.loadXMTpData(`${clientKey}:${key}`);
+    //     return data !== null;
+    //   },
 
-      async keys(prefix?: string): Promise<string[]> {
-        const searchPattern = prefix
-          ? `xmtp:${clientKey}:${prefix}*`
-          : `xmtp:${clientKey}:*`;
-        const keys = await redisClient.getClient().keys(searchPattern);
-        return keys.map((key) => key.replace(`xmtp:${clientKey}:`, ""));
-      },
+    //   async keys(prefix?: string): Promise<string[]> {
+    //     const searchPattern = prefix
+    //       ? `xmtp:${clientKey}:${prefix}*`
+    //       : `xmtp:${clientKey}:*`;
+    //     const keys = await redisClient.getClient().keys(searchPattern);
+    //     return keys.map((key) => key.replace(`xmtp:${clientKey}:`, ""));
+    //   },
 
-      async clear(): Promise<void> {
-        const keys = await redisClient.getClient().keys(`xmtp:${clientKey}:*`);
-        if (keys.length > 0) {
-          await redisClient.getClient().del(...keys);
-        }
-      },
-    };
+    //   async clear(): Promise<void> {
+    //     const keys = await redisClient.getClient().keys(`xmtp:${clientKey}:*`);
+    //     if (keys.length > 0) {
+    //       await redisClient.getClient().del(...keys);
+    //     }
+    //   },
+    // };
 
     // Create XMTP client with Redis storage
     this.client = (await Client.create(this.signer, {
