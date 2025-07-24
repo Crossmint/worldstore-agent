@@ -22,7 +22,7 @@ export const getUserOnchainTools = async (
 
     if (!userProfile.walletAddress) {
       userProfile.walletAddress = userWallet.account.address;
-      saveUserProfile(userProfile);
+      await saveUserProfile(userProfile);
       logger.profile("Updated profile with wallet address", {
         userInboxId: userProfile.inboxId,
         walletAddress: userProfile.walletAddress,

@@ -5,10 +5,80 @@ Demonstration of an XMTP bot that enables crypto-powered Amazon purchases throug
 
 - Supported Network: Base (Sepolia & Mainnet)
 - Supported Currency: USDC (`0x036CbD53842c5426634e7929541eC2318f3dCF7e` on Base Sepolia and `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` on Base Mainnet)
+- **Storage**: Redis for high-performance data management with filesystem fallback
 - Tech Stack
   - Client: XMTP
   - Bot framework: Langgraph
+  - Storage: Redis with JSON search capabilities
   - Backend: custom facilitator + crossmint API wrapper; returns 402 for `/order` API and calls Crossmint's APIs internally
+
+## Redis Integration
+
+The bot now uses Redis for enhanced performance and scalability:
+
+### **Benefits**
+- **In-memory performance** for faster user profile and order operations
+- **Atomic operations** preventing race conditions in order updates
+- **JSON document queries** for complex user data searches
+- **TTL support** for conversation state caching
+- **Search indexes** for user analytics and management
+- **Horizontal scaling** capabilities
+
+### **Storage Structure**
+```
+Redis Keys:
+- user:{inboxId}           # User profile JSON documents
+- xmtp:{clientKey}:{data}  # XMTP client data
+- conversation:{inboxId}   # Cached conversation state (TTL: 1h)
+- activity:{inboxId}:{date} # User activity tracking (TTL: 7d)
+```
+
+### **Environment Variables**
+```bash
+# Redis Configuration
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=           # Optional
+REDIS_DB=0               # Default database
+```
+
+### **Installation Options**
+
+**Option 1: Docker (Recommended)**
+```bash
+# Run Redis Stack with all modules
+docker run -d --name redis-stack -p 6379:6379 redis/redis-stack:latest
+
+# Verify it's running
+redis-cli ping  # Should return PONG
+```
+
+**Option 2: Local Installation**
+```bash
+# macOS
+brew install redis
+brew services start redis
+
+# Ubuntu/Debian
+sudo apt update && sudo apt install redis-server
+sudo systemctl start redis-server
+```
+
+**Note:** For full features (JSON documents, search indexes), Redis Stack is required. Standard Redis will work with basic functionality but without advanced search features.
+
+### **Migration**
+The bot automatically migrates existing filesystem data to Redis on startup. Manual migration is also available:
+
+```bash
+# Migrate filesystem data to Redis
+pnpm run migrate
+
+# Rollback to filesystem (if needed)
+pnpm run migrate:rollback
+```
+
+### **Fallback Behavior**
+If Redis is unavailable, the bot gracefully falls back to filesystem storage, ensuring continuous operation.
 
 ## under the hood
 - the bot has a deterministic wallet generated per user
@@ -36,32 +106,45 @@ Demonstration of an XMTP bot that enables crypto-powered Amazon purchases throug
 
 ```mermaid
 graph TD
-    %% Main Message Flow
-    START([START]) --> load_profile[Load User Profile<br/>- Check for existing profile<br/>- Load conversation history]
+    START["🚀 Bot Startup"] --> REDIS_INIT["🔴 Initialize Redis"]
+    REDIS_INIT --> REDIS_CHECK{Redis Connected?}
 
-    load_profile --> create_agent[Create Shopping Agent<br/>- Initialize all tools<br/>- Set user context]
+    REDIS_CHECK -->|✅ Yes| DATA_CHECK{Existing Data?}
+    REDIS_CHECK -->|❌ No| FILESYSTEM_FALLBACK["📁 Fallback to Filesystem"]
 
-    create_agent --> shopping_node[Shopping Node<br/>- Process user request<br/>- Execute tools as needed<br/>- Generate response]
+    DATA_CHECK -->|Found| AUTO_MIGRATE["🔄 Auto-migrate to Redis"]
+    DATA_CHECK -->|None| REDIS_READY["✅ Redis Ready"]
 
-    shopping_node --> END([END])
+    AUTO_MIGRATE --> BACKUP["💾 Backup Original Files"]
+    BACKUP --> MIGRATE_PROFILES["👤 Migrate User Profiles"]
+    MIGRATE_PROFILES --> CREATE_INDEXES["🔍 Create Search Indexes"]
+    CREATE_INDEXES --> VERIFY["✅ Verify Migration"]
+    VERIFY --> REDIS_READY
 
-    %% XMTP Message Layer
-    subgraph XMTP_Layer ["📨 XMTP Message Layer"]
-        message_receive[Receive Message] --> message_filter{Filter Message<br/>- Skip own messages<br/>- Text messages only}
-        message_filter -->|Valid| sync_conversation[Sync Conversation<br/>- Load message history<br/>- Send 'thinking...' status]
-        sync_conversation --> invoke_agent[Invoke Agent<br/>- Create initial state<br/>- Process through workflow]
-        invoke_agent --> send_response[Send Response<br/>- Sync conversation<br/>- Ensure delivery]
-    end
+    FILESYSTEM_FALLBACK --> CREATE_DIRS["📂 Create Directories"]
+    CREATE_DIRS --> FILESYSTEM_READY["📁 Filesystem Ready"]
 
-    %% Tools Available to Agent
-    subgraph Tools ["🛠️ Available Tools"]
-        profile_tools[Profile Tools<br/>- edit_profile<br/>- read_profile]
-        shopping_tools[Shopping Tools<br/>- search_product<br/>- order_product]
-        order_tools[Order Tools<br/>- get_user_order_history<br/>- get_order_status]
-        goat_tools[GOAT SDK Tools<br/>- Onchain operations<br/>- Wallet interactions]
-    end
+    REDIS_READY --> INIT_XMTP["📡 Initialize XMTP Client"]
+    FILESYSTEM_READY --> INIT_XMTP
 
-    %% X402 Payment Flow (triggered by order_product)
+    INIT_XMTP --> load_profile[Load User Profile]
+    load_profile --> create_agent[Create Agent]
+    create_agent --> shopping_node[Shopping Agent Node]
+
+    shopping_node --> message_receive[Receive XMTP Message]
+    message_receive --> message_filter{Filter Message}
+    message_filter -->|Valid| sync_conversation[Sync Conversation]
+    message_filter -->|Invalid| END
+
+    sync_conversation --> invoke_agent[Invoke LangGraph Agent]
+
+    invoke_agent --> profile_tools[Profile Management Tools]
+    invoke_agent --> shopping_tools[Shopping Tools]
+    invoke_agent --> order_tools[Order Processing Tools]
+    invoke_agent --> goat_tools[GOAT SDK Tools]
+
+    order_tools --> X402_Flow
+
     subgraph X402_Flow ["💳 x402 Payment Flow"]
         initial_request[POST /api/orders<br/>- Send order details]
         payment_required[Receive 402<br/>- Extract payment requirements]
@@ -73,34 +156,41 @@ graph TD
         generate_signature --> retry_payment
     end
 
-    %% State Management
-    subgraph State ["📊 State Management"]
-        user_profiles[User Profiles<br/>.data/user-profiles/<br/>JSON files with order history]
-        deterministic_wallets[Deterministic Wallets<br/>Generated per user<br/>EIP-712 signing]
-        conversation_state[Conversation State<br/>Message history<br/>Agent context]
+    profile_tools --> send_response[Send Response]
+    shopping_tools --> send_response
+    order_tools --> send_response
+    goat_tools --> send_response
+
+    send_response --> END
+
+    %% Storage Integration
+    subgraph Redis_Storage ["🔴 Redis Storage"]
+        user_profiles_redis[User Profiles<br/>JSON Documents with Search]
+        xmtp_data_redis[XMTP Client Data<br/>Key-Value with TTL]
+        conversation_cache[Conversation Cache<br/>1h TTL]
+        activity_tracking[Activity Analytics<br/>7d TTL]
     end
 
-    %% Connections
-    message_receive -.-> START
-    shopping_node -.-> profile_tools
-    shopping_node -.-> shopping_tools
-    shopping_node -.-> order_tools
-    shopping_node -.-> goat_tools
-    order_tools -.-> X402_Flow
-    profile_tools -.-> user_profiles
-    goat_tools -.-> deterministic_wallets
-    sync_conversation -.-> conversation_state
+    subgraph Filesystem_Storage ["📁 Filesystem Fallback"]
+        user_profiles_fs[User Profile JSON Files<br/>.data/user-profiles/]
+        xmtp_data_fs[XMTP SQLite DBs<br/>.data/xmtp/]
+    end
+
+    REDIS_READY -.-> Redis_Storage
+    FILESYSTEM_READY -.-> Filesystem_Storage
 
     %% Styling
     classDef mainFlow fill:#e1f5fe
     classDef xmtpFlow fill:#e8f5e8
     classDef toolsFlow fill:#fff3e0
     classDef paymentFlow fill:#fce4ec
-    classDef stateFlow fill:#f3e5f5
+    classDef redisFlow fill:#ffebee
+    classDef filesystemFlow fill:#f3e5f5
 
-    class START,load_profile,create_agent,shopping_node,END mainFlow
+    class START,REDIS_INIT,load_profile,create_agent,shopping_node,END mainFlow
     class message_receive,message_filter,sync_conversation,invoke_agent,send_response xmtpFlow
     class profile_tools,shopping_tools,order_tools,goat_tools toolsFlow
     class initial_request,payment_required,generate_signature,retry_payment paymentFlow
-    class user_profiles,deterministic_wallets,conversation_state stateFlow
+    class REDIS_CHECK,AUTO_MIGRATE,BACKUP,MIGRATE_PROFILES,CREATE_INDEXES,VERIFY,REDIS_READY,Redis_Storage redisFlow
+    class FILESYSTEM_FALLBACK,CREATE_DIRS,FILESYSTEM_READY,Filesystem_Storage filesystemFlow
 ```

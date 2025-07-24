@@ -23,6 +23,8 @@ import {
 import { USER_STORAGE_DIR } from "./helpers/constants";
 import { shoppingAssistantPrompt } from "lib/prompts";
 import { loadUserProfile } from "@helpers/loadUserProfile";
+import { redisClient } from "./helpers/redis";
+import { migrateToRedis } from "./helpers/migration";
 import { getTools } from "@lib/tools";
 import { orderProductTool } from "@lib/tools/product";
 import {
@@ -54,17 +56,38 @@ class XMTPShoppingBot {
       modelName: "claude-sonnet-4-20250514",
       temperature: 1,
     });
-    this.initializeDirectories();
   }
 
-  private initializeDirectories() {
-    [USER_STORAGE_DIR /** can add more here in the future if needed */].forEach(
-      (dir) => {
+  private async initializeRedis() {
+    logger.info("Initializing Redis connection...");
+
+    try {
+      await redisClient.connect();
+      const isConnected = await redisClient.ping();
+
+      if (!isConnected) {
+        throw new Error("Redis connection failed");
+      }
+
+      logger.success("Redis connected successfully");
+
+      // Auto-migrate existing data if filesystem storage exists
+      if (fs.existsSync(USER_STORAGE_DIR)) {
+        logger.info("Existing filesystem data detected, running migration...");
+        await migrateToRedis();
+      }
+
+    } catch (error) {
+      logger.error("Redis initialization failed:", error);
+      logger.warn("Falling back to filesystem storage");
+
+      // Fallback: create directories for filesystem storage
+      [USER_STORAGE_DIR].forEach((dir) => {
         if (!fs.existsSync(dir)) {
           fs.mkdirSync(dir, { recursive: true });
         }
-      }
-    );
+      });
+    }
   }
 
   private async sendFundingRequest({
@@ -389,7 +412,7 @@ class XMTPShoppingBot {
           messages: agentMessages,
           userInboxId,
           lastMessage: messageContent,
-          userProfile: loadUserProfile(userInboxId),
+          userProfile: await loadUserProfile(userInboxId),
           fundingData: this.currentFundingRequirement[userInboxId],
         };
 
@@ -483,6 +506,9 @@ class XMTPShoppingBot {
   }
   async initialize() {
     logger.info("Initializing XMTP Shopping Bot...");
+
+    // Initialize Redis first
+    await this.initializeRedis();
 
     const signer = createSigner(WALLET_KEY); // for xmtp
     const dbEncryptionKey = getEncryptionKeyFromHex(ENCRYPTION_KEY);

@@ -70,7 +70,7 @@ CRITICAL: Only call when user explicitly requests to purchase a specific ASIN.`,
         });
 
         // Load user profile
-        const userProfile = loadUserProfile(userInboxId);
+        const userProfile = await loadUserProfile(userInboxId);
         if (!userProfile || !userProfile.isComplete) {
           return "❌ Your profile must be complete before ordering. Please provide your name, email, and shipping address first.";
         }

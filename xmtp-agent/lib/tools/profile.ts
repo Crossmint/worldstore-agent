@@ -59,7 +59,7 @@ For addresses, parse into structured shippingAddress format:
         logger.tool("edit_profile", "Editing profile", { userInboxId });
 
         // Load or create current profile
-        let currentProfile = loadUserProfile(userInboxId);
+        let currentProfile = await loadUserProfile(userInboxId);
         if (!currentProfile) {
           logger.profile("Creating new profile", { userInboxId });
           currentProfile = {
@@ -141,7 +141,7 @@ For addresses, parse into structured shippingAddress format:
           });
         }
 
-        saveUserProfile(currentProfile);
+        await saveUserProfile(currentProfile);
         logger.profile("Profile saved", { userInboxId });
 
         logger.success("Profile updated successfully", { userInboxId });
@@ -184,7 +184,7 @@ This tool always returns the actual saved profile data, never assumptions.`,
       try {
         logger.tool("read_profile", "Reading profile", { userInboxId });
 
-        const currentProfile = loadUserProfile(userInboxId);
+        const currentProfile = await loadUserProfile(userInboxId);
 
         if (!currentProfile) {
           return `❌ No profile exists for this user.
