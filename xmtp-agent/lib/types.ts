@@ -1,5 +1,7 @@
 import { z } from "zod";
-import { WORLDSTORE_API_URL } from "@helpers/constants";
+import { validateEnvironment } from "@helpers/client";
+
+const { WORLDSTORE_API_URL } = validateEnvironment(["WORLDSTORE_API_URL"]);
 
 export type FundingData = {
   shortfall: string;

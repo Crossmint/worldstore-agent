@@ -1,10 +1,9 @@
 import { logger } from "@helpers/logger";
 import {
-  DynamicStructuredTool 
+  DynamicStructuredTool
 } from "@langchain/core/tools";
 import { z } from "zod";
 import { loadUserProfile } from "@helpers/loadUserProfile";
-import { WORLDSTORE_API_URL } from "@helpers/constants";
 import { getWalletClientForUser } from "@helpers/getWalletClientForUser";
 import { randomBytes } from "crypto";
 import {
@@ -14,8 +13,10 @@ import {
 } from "../types";
 import { saveUserOrderId } from "@helpers/saveUserOrderId";
 import { getJson } from "serpapi";
-import { validateEnvironment } from "@helpers/client";
 import { USDCHandler } from "@helpers/usdc";
+import { validateEnvironment } from "@helpers/client";
+
+const { WORLDSTORE_API_URL } = validateEnvironment(["WORLDSTORE_API_URL"]);
 
 // @ts-ignore - Using Node.js 18+ global fetch
 declare const fetch: any;

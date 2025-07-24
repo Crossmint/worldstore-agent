@@ -1,9 +1,12 @@
 import { logger } from "@helpers/logger";
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { z } from "zod";
-import { WORLDSTORE_API_URL } from "@helpers/constants";
 import { orderStatusToolSchema, readProfileToolSchema } from "../types";
 import { loadUserOrders } from "@helpers/loadUserOrders";
+import { validateEnvironment } from "@helpers/client";
+
+const { WORLDSTORE_API_URL } = validateEnvironment(["WORLDSTORE_API_URL"]);
+
 // @ts-ignore - Using Node.js 18+ global fetch
 declare const fetch: any;
 
