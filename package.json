@@ -1,41 +1,46 @@
 {
-  "name": "x402-crossmint-api",
+  "name": "x402-worldstore",
   "version": "1.0.0",
-  "description": "API that combines x402 payment protocol with Crossmint Worldstore for crypto-powered Amazon purchases",
-  "main": "src/server.js",
+  "description": "x402 payment protocol integration with Crossmint Worldstore and XMTP agent",
+  "private": true,
+  "type": "module",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
-    "test": "jest",
-    "example": "node examples/client.js",
-    "payment": "node scripts/generate-payment.js",
-    "payment:examples": "node examples/payment-example.js",
-    "test:api": "curl -s http://localhost:3000/health | json_pp"
+    "build": "pnpm -r run build",
+    "dev": "pnpm -r run dev",
+    "dev:server": "pnpm -F x402-crossmint-api run dev",
+    "dev:agent": "pnpm -F crossmint-xmtp-agent run dev",
+    "dev:both": "concurrently \"pnpm dev:server\" \"pnpm dev:agent\" --names \"server,agent\" --prefix-colors \"blue,green\"",
+    "start:server": "pnpm -F x402-crossmint-api run start",
+    "start:agent": "pnpm -F crossmint-xmtp-agent run dev",
+    "start:both": "concurrently \"pnpm start:server\" \"pnpm start:agent\" --names \"server,agent\" --prefix-colors \"blue,green\"",
+    "lint": "pnpm -r run lint",
+    "lint:check": "pnpm -r run lint:check",
+    "format": "pnpm -r run format",
+    "format:check": "pnpm -r run format:check",
+    "type:check": "pnpm -r run type:check",
+    "clean": "pnpm -r run clean && rm -rf node_modules",
+    "test": "pnpm -r run test"
   },
-  "dependencies": {
-    "@crossmint/wallets-sdk": "^0.10.8",
-    "@coinbase/x402": "^0.1.0",
-    "axios": "^1.6.0",
-    "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
-    "ethers": "^6.15.0",
-    "express": "^4.18.2",
-    "helmet": "^7.1.0",
-    "joi": "^17.11.0",
-    "uuid": "^9.0.1"
-  },
+  "workspaces": [
+    "402-server",
+    "xmtp-agent"
+  ],
   "devDependencies": {
-    "jest": "^29.7.0",
-    "nodemon": "^3.0.1"
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=8.0.0"
   },
   "keywords": [
     "x402",
     "crossmint",
+    "xmtp",
     "crypto",
     "payments",
-    "amazon",
-    "api"
+    "blockchain"
   ],
-  "author": "",
-  "license": "MIT"
+  "author": "Crossmint",
+  "license": "MIT",
+  "packageManager": "pnpm@9.15.2+sha1.0ffb02f94047016ec7e088030337455b4c94bb34"
 }
