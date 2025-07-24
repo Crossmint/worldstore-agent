@@ -21,7 +21,7 @@ class RedisClient {
     //   lazyConnect: true,
     // };
 
-    this.client = new Redis(REDIS_URL);
+    this.client = new Redis(`${REDIS_URL  }?family=0`);
 
     this.client.on("connect", () => {
       logger.info("Redis connected successfully");
