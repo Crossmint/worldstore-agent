@@ -1,0 +1,10 @@
+[build]
+builder = "nixpacks"
+buildCommand = "pnpm install"
+
+[deploy]
+startCommand = "pnpm run dev"
+restartPolicyType = "always"
+
+[[services]]
+name = "xmtp-agent"
