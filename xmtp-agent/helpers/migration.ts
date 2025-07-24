@@ -14,12 +14,14 @@ export class DataMigration {
     await redisClient.connect();
 
     if (!fs.existsSync(USER_STORAGE_DIR)) {
-      logger.info("No existing user profiles directory found, skipping migration");
+      logger.info(
+        "No existing user profiles directory found, skipping migration"
+      );
       return;
     }
 
     const files = fs.readdirSync(USER_STORAGE_DIR);
-    const jsonFiles = files.filter(file => file.endsWith('.json'));
+    const jsonFiles = files.filter((file) => file.endsWith(".json"));
 
     if (jsonFiles.length === 0) {
       logger.info("No user profile files found, skipping migration");
@@ -37,10 +39,12 @@ export class DataMigration {
     for (const file of jsonFiles) {
       try {
         const filePath = path.join(USER_STORAGE_DIR, file);
-        const inboxId = file.replace('.json', '');
+        const inboxId = file.replace(".json", "");
 
         // Read existing profile data
-        const profileData = JSON.parse(fs.readFileSync(filePath, 'utf8')) as UserProfile;
+        const profileData = JSON.parse(
+          fs.readFileSync(filePath, "utf8")
+        ) as UserProfile;
 
         // Validate profile structure
         if (!profileData.inboxId) {
@@ -60,14 +64,15 @@ export class DataMigration {
 
         migratedCount++;
         logger.info(`Migrated profile: ${inboxId}`);
-
       } catch (error) {
         errorCount++;
         logger.error(`Failed to migrate profile ${file}:`, error);
       }
     }
 
-    logger.info(`Migration completed: ${migratedCount} profiles migrated, ${errorCount} errors`);
+    logger.info(
+      `Migration completed: ${migratedCount} profiles migrated, ${errorCount} errors`
+    );
 
     // Clean up empty directory if all files were migrated
     try {
@@ -92,7 +97,7 @@ export class DataMigration {
     }
 
     const files = fs.readdirSync(xmtpDataDir);
-    const dbFiles = files.filter(file => file.endsWith('.db3'));
+    const dbFiles = files.filter((file) => file.endsWith(".db3"));
 
     if (dbFiles.length === 0) {
       logger.info("No XMTP database files found, skipping migration");
@@ -125,7 +130,9 @@ export class DataMigration {
     }
 
     logger.info("XMTP data backup completed");
-    logger.warn("Note: Full XMTP SQLite to Redis migration requires additional implementation");
+    logger.warn(
+      "Note: Full XMTP SQLite to Redis migration requires additional implementation"
+    );
   }
 
   async verifyMigration(): Promise<boolean> {
@@ -152,17 +159,19 @@ export class DataMigration {
           city: "Test City",
           state: "TS",
           postalCode: "12345",
-          country: "US"
+          country: "US",
         },
         isComplete: true,
-        orderHistory: []
+        orderHistory: [],
       };
 
       // Save test profile
       await redisClient.saveUserProfile(testProfile);
 
       // Load test profile
-      const loadedProfile = await redisClient.loadUserProfile(testProfile.inboxId);
+      const loadedProfile = await redisClient.loadUserProfile(
+        testProfile.inboxId
+      );
 
       if (!loadedProfile || loadedProfile.inboxId !== testProfile.inboxId) {
         logger.error("User profile verification failed");
@@ -174,7 +183,6 @@ export class DataMigration {
 
       logger.info("Migration verification successful");
       return true;
-
     } catch (error) {
       logger.error("Migration verification failed:", error);
       return false;
@@ -204,7 +212,6 @@ export class DataMigration {
 
         fs.renameSync(backupPath, restorePath);
         restoredCount++;
-
       } catch (error) {
         logger.error(`Failed to restore ${file}:`, error);
       }
@@ -243,7 +250,6 @@ export const migrateToRedis = async (): Promise<void> => {
       logger.error("❌ Migration verification failed");
       throw new Error("Migration verification failed");
     }
-
   } catch (error) {
     logger.error("Migration failed:", error);
     throw error;

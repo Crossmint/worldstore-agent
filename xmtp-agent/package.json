@@ -21,14 +21,14 @@
     "@anthropic-ai/bedrock-sdk": "^0.10.2",
     "@anthropic-ai/sdk": "^0.27.3",
     "@anthropic-ai/vertex-sdk": "^0.4.1",
-     "@goat-sdk/adapter-langchain": "^0.2.12",
-     "@goat-sdk/core": "^0.5.0",
-     "@goat-sdk/wallet-viem": "^0.3.0",
+    "@goat-sdk/adapter-langchain": "^0.2.12",
+    "@goat-sdk/core": "^0.5.0",
+    "@goat-sdk/wallet-viem": "^0.3.0",
     "@langchain/anthropic": "^0.3.7",
     "@langchain/core": "^0.3.28",
     "@langchain/langgraph": "^0.2.19",
-         "@xmtp/content-type-wallet-send-calls": "^2.0.0",
-     "@xmtp/node-sdk": "^3.2.0",
+    "@xmtp/content-type-wallet-send-calls": "^2.0.0",
+    "@xmtp/node-sdk": "^3.2.0",
     "dotenv": "^16.4.5",
     "ioredis": "^5.4.1",
     "redis": "^4.7.0",
@@ -51,7 +51,6 @@
     "node": ">=20",
     "pnpm": ">=8.0.0"
   },
-
   "keywords": [
     "crossmint",
     "cookbook",

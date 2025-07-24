@@ -8,7 +8,7 @@ async function main() {
   const command = args[0];
 
   switch (command) {
-    case 'migrate':
+    case "migrate":
       logger.info("Starting migration to Redis...");
       try {
         await migrateToRedis();
@@ -20,7 +20,7 @@ async function main() {
       }
       break;
 
-    case 'rollback':
+    case "rollback":
       logger.info("Rolling back migration...");
       try {
         await rollbackMigration();

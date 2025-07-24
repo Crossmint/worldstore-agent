@@ -76,7 +76,6 @@ class XMTPShoppingBot {
         logger.info("Existing filesystem data detected, running migration...");
         await migrateToRedis();
       }
-
     } catch (error) {
       logger.error("Redis initialization failed:", error);
       logger.warn("Falling back to filesystem storage");
