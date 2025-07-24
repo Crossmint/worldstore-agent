@@ -10,7 +10,7 @@ import { sepolia } from "viem/chains";
 interface User {
   key: `0x${string}`;
   account: ReturnType<typeof privateKeyToAccount>;
-  wallet: ReturnType<typeof createWalletClient>;
+  wallet: any;
 }
 
 export const createUser = (key: string): User => {
