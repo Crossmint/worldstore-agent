@@ -164,7 +164,7 @@ For addresses, parse into structured shippingAddress format:
         return "❌ Error updating profile. Please try again.";
       }
     },
-  });
+  }) as StructuredToolInterface;
 };
 
 export const readProfileTool = (): StructuredToolInterface => {
@@ -219,5 +219,5 @@ Profile ID: ${currentProfile.inboxId}`;
         return "❌ Error reading profile. Please try again.";
       }
     },
-  });
+  }) as StructuredToolInterface;
 };
