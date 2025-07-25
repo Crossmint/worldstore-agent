@@ -150,15 +150,16 @@ CRITICAL: Only call when user explicitly requests to purchase a specific ASIN.`,
             ],
           };
           const now = Math.floor(Date.now() / 1000);
+          const nonce = `0x${randomBytes(32).toString("hex")}`;
           const authorization = {
             from: userWallet.account.address,
-            to: paymentRequirements.asset,
+            to: paymentRequirements.payTo,
             value: BigInt(paymentRequirements.maxAmountRequired),
             validAfter: BigInt(0),
             validBefore: BigInt(
               now + (paymentRequirements.maxTimeoutSeconds || 3600)
             ),
-            nonce: `0x${randomBytes(32).toString("hex")}`,
+            nonce,
           };
 
           // check balance before signing data for transaction
@@ -210,13 +211,13 @@ CRITICAL: Only call when user explicitly requests to purchase a specific ASIN.`,
               signature,
               authorization: {
                 from: userWallet.account.address,
-                to: paymentRequirements.asset,
+                to: paymentRequirements.payTo,
                 value: BigInt(paymentRequirements.maxAmountRequired).toString(),
                 validAfter: BigInt(0).toString(),
                 validBefore: BigInt(
                   now + (paymentRequirements.maxTimeoutSeconds || 3600)
                 ).toString(),
-                nonce: `0x${randomBytes(32).toString("hex")}`,
+                nonce,
               },
             },
             extra: {
