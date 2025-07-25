@@ -10,18 +10,7 @@ class RedisClient {
   private isConnected = false;
 
   constructor() {
-    // const redisConfig = {
-    //   host: process.env.REDIS_HOST ?? "localhost",
-    //   port: parseInt(process.env.REDIS_PORT ?? "6379"),
-    //   password: process.env.REDIS_PASSWORD,
-    //   db: parseInt(process.env.REDIS_DB ?? "0"),
-    //   retryDelayOnFailover: 100,
-    //   enableReadyCheck: true,
-    //   maxRetriesPerRequest: 3,
-    //   lazyConnect: true,
-    // };
-
-    this.client = new Redis(`${REDIS_URL  }?family=0`);
+    this.client = new Redis(`${REDIS_URL}?family=0`);
 
     this.client.on("connect", () => {
       logger.info("Redis connected successfully");
@@ -35,15 +24,21 @@ class RedisClient {
 
     this.client.on("ready", () => {
       logger.info("Redis ready for operations");
-      this.createIndexes().catch((err) =>
-        logger.warn("Index creation warning:", err.message)
-      );
     });
   }
 
   async connect(): Promise<void> {
-    if (!this.isConnected) {
+    if (this.client.status === 'ready' || this.client.status === 'connecting') {
+      return;
+    }
+
+    try {
       await this.client.connect();
+    } catch (error) {
+      if (error.message?.includes('already connecting/connected')) {
+        return;
+      }
+      throw error;
     }
   }
 
@@ -52,144 +47,61 @@ class RedisClient {
     this.isConnected = false;
   }
 
-  private async createIndexes(): Promise<void> {
-    try {
-      // Create user profiles index
-      await this.client.call(
-        "FT.CREATE",
-        "idx:users",
-        "ON",
-        "JSON",
-        "PREFIX",
-        "1",
-        "user:",
-        "SCHEMA",
-        "$.inboxId",
-        "AS",
-        "inboxId",
-        "TEXT",
-        "$.email",
-        "AS",
-        "email",
-        "TEXT",
-        "$.name",
-        "AS",
-        "name",
-        "TEXT",
-        "$.shippingAddress.city",
-        "AS",
-        "city",
-        "TEXT",
-        "$.shippingAddress.state",
-        "AS",
-        "state",
-        "TEXT",
-        "$.isComplete",
-        "AS",
-        "complete",
-        "TAG",
-        "$.walletAddress",
-        "AS",
-        "walletAddress",
-        "TEXT"
-      );
-      logger.info("Created user profiles search index");
-    } catch (error) {
-      if (!error.message?.includes("Index already exists")) {
-        logger.warn("Failed to create user index:", error.message);
-      }
-    }
-
-    try {
-      // Create orders index for order history
-      await this.client.call(
-        "FT.CREATE",
-        "idx:orders",
-        "ON",
-        "JSON",
-        "PREFIX",
-        "1",
-        "order:",
-        "SCHEMA",
-        "$.id",
-        "AS",
-        "orderId",
-        "TEXT",
-        "$.userId",
-        "AS",
-        "userId",
-        "TEXT",
-        "$.timestamp",
-        "AS",
-        "timestamp",
-        "NUMERIC",
-        "$.status",
-        "AS",
-        "status",
-        "TAG",
-        "$.totalPrice",
-        "AS",
-        "price",
-        "NUMERIC"
-      );
-      logger.info("Created orders search index");
-    } catch (error) {
-      if (!error.message?.includes("Index already exists")) {
-        logger.warn("Failed to create orders index:", error.message);
-      }
-    }
-  }
-
   // User Profile Operations
   async saveUserProfile(profile: UserProfile): Promise<void> {
     const key = `user:${profile.inboxId}`;
-    await this.client.call("JSON.SET", key, "$", JSON.stringify(profile));
+    await this.client.set(key, JSON.stringify(profile));
     logger.info(`Saved user profile: ${profile.inboxId}`);
   }
 
   async loadUserProfile(inboxId: string): Promise<UserProfile | null> {
     const key = `user:${inboxId}`;
-    const result = await this.client.call("JSON.GET", key, "$");
+    const result = await this.client.get(key);
 
     if (!result) return null;
 
-    const parsed = JSON.parse(result as string);
-    return Array.isArray(parsed) ? parsed[0] : parsed;
+    try {
+      return JSON.parse(result);
+    } catch (error) {
+      logger.error(`Failed to parse user profile for ${inboxId}:`, error);
+      return null;
+    }
   }
 
   async appendUserOrder(inboxId: string, order: any): Promise<void> {
-    const key = `user:${inboxId}`;
-    await this.client.call(
-      "JSON.ARRAPPEND",
-      key,
-      "$.orderHistory",
-      JSON.stringify(order)
-    );
+    const profile = await this.loadUserProfile(inboxId);
+
+    if (!profile) {
+      logger.warn(`No profile found for ${inboxId}, cannot append order`);
+      return;
+    }
+
+    // Ensure orderHistory exists
+    if (!profile.orderHistory) {
+      profile.orderHistory = [];
+    }
+
+    profile.orderHistory.push(order);
+    await this.saveUserProfile(profile);
+
     logger.info(`Added order to user ${inboxId}: ${order.id}`);
   }
 
   async getUserOrderHistory(inboxId: string): Promise<any[]> {
-    const key = `user:${inboxId}`;
-    const result = await this.client.call("JSON.GET", key, "$.orderHistory");
-
-    if (!result) return [];
-
-    const parsed = JSON.parse(result as string);
-    return Array.isArray(parsed) ? parsed[0] || [] : [];
+    const profile = await this.loadUserProfile(inboxId);
+    return profile?.orderHistory || [];
   }
 
   // XMTP Database Operations
   async saveXMTpData(key: string, data: any, ttl?: number): Promise<void> {
     const redisKey = `xmtp:${key}`;
 
-    if (typeof data === "object") {
-      await this.client.call("JSON.SET", redisKey, "$", JSON.stringify(data));
-    } else {
-      await this.client.set(redisKey, data);
-    }
+    const value = typeof data === "object" ? JSON.stringify(data) : data;
 
     if (ttl) {
-      await this.client.expire(redisKey, ttl);
+      await this.client.setex(redisKey, ttl, value);
+    } else {
+      await this.client.set(redisKey, value);
     }
 
     logger.debug(`Saved XMTP data: ${redisKey}`);
@@ -197,20 +109,16 @@ class RedisClient {
 
   async loadXMTpData(key: string): Promise<any> {
     const redisKey = `xmtp:${key}`;
+    const result = await this.client.get(redisKey);
 
-    // Try JSON first
+    if (!result) return null;
+
     try {
-      const jsonResult = await this.client.call("JSON.GET", redisKey, "$");
-      if (jsonResult) {
-        const parsed = JSON.parse(jsonResult as string);
-        return Array.isArray(parsed) ? parsed[0] : parsed;
-      }
+      return JSON.parse(result);
     } catch {
-      // Fall back to regular GET
-      return await this.client.get(redisKey);
+      // Return as string if not valid JSON
+      return result;
     }
-
-    return null;
   }
 
   async deleteXMTpData(key: string): Promise<void> {
@@ -243,35 +151,56 @@ class RedisClient {
     await this.client.expire(key, 86400 * 7); // 7 days retention
   }
 
-  // Search operations
+  // Simple search operations (without RedisSearch)
   async searchUsers(query: string): Promise<UserProfile[]> {
     try {
-      const result = await this.client.call(
-        "FT.SEARCH",
-        "idx:users",
-        query,
-        "LIMIT",
-        "0",
-        "50"
-      );
+      // Simple pattern-based search using SCAN
+      const keys = await this.client.keys('user:*');
       const users: UserProfile[] = [];
 
-      if (Array.isArray(result) && result.length > 1) {
-        for (let i = 1; i < result.length; i += 2) {
-          if (result[i + 1] && typeof result[i + 1] === "object") {
-            const userData = result[i + 1] as any;
-            if (userData["$"]) {
-              users.push(JSON.parse(userData["$"]));
-            }
-          }
+      for (const key of keys) {
+        const profile = await this.loadUserProfile(key.replace('user:', ''));
+        if (profile && this.matchesQuery(profile, query)) {
+          users.push(profile);
         }
       }
 
-      return users;
+      return users.slice(0, 50); // Limit results
     } catch (error) {
       logger.warn("User search failed:", error.message);
       return [];
     }
+  }
+
+  private matchesQuery(profile: UserProfile, query: string): boolean {
+    const searchText = query.toLowerCase();
+    const fields = [
+      profile.email,
+      profile.name,
+      profile.inboxId,
+      profile.shippingAddress?.city,
+      profile.shippingAddress?.state,
+      profile.walletAddress
+    ].filter(Boolean);
+
+    return fields.some(field =>
+      field?.toString().toLowerCase().includes(searchText)
+    );
+  }
+
+  // Get all user profiles (for admin/debugging)
+  async getAllUsers(): Promise<UserProfile[]> {
+    const keys = await this.client.keys('user:*');
+    const users: UserProfile[] = [];
+
+    for (const key of keys) {
+      const profile = await this.loadUserProfile(key.replace('user:', ''));
+      if (profile) {
+        users.push(profile);
+      }
+    }
+
+    return users;
   }
 
   // Health check
