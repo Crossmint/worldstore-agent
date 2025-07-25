@@ -1,24 +1,28 @@
 # x402-worldstore Monorepo
 
-A pnpm workspace monorepo containing x402 payment protocol integration with Crossmint Worldstore and XMTP agent.
+A pnpm workspace monorepo containing example agent implementations for Crossmint's worldstore APIs.
 
 ## Architecture
 
 ```
 x402-worldstore/
-├── 402-server/          # Express API server with x402 payment protocol
-├── xmtp-agent/          # XMTP integration with AI tools
+├── xmtp-402-agent/      # x402 payment integration
+│   ├── agent/           # XMTP agent that interacts with custom 402 server
+│   └── server/          # Custom server serving 402 payment responses
+├── xmtp-agent/          # Direct Crossmint Worldstore integration
 ├── pnpm-workspace.yaml  # Workspace configuration
 └── package.json         # Root package with workspace scripts
 ```
 
 ## Packages
 
-### 402-server
-Express API that combines x402 payment protocol with Crossmint Worldstore for crypto-powered Amazon purchases.
+### xmtp-402-agent
+Complete x402 payment solution consisting of:
+- **Agent**: XMTP integration that communicates with the custom 402 server for payment processing
+- **Server**: Express API that serves 402 payment protocol responses integrated with Crossmint
 
 ### xmtp-agent
-XMTP integration with AI/LangChain tools and Crossmint Wallets SDK for blockchain interactions.
+XMTP integration with AI/LangChain tools that interacts directly with Crossmint Worldstore APIs for blockchain interactions.
 
 ## Getting Started
 
@@ -26,15 +30,18 @@ XMTP integration with AI/LangChain tools and Crossmint Wallets SDK for blockchai
 # Install all workspace dependencies
 pnpm install
 
-# Run both apps simultaneously in development mode
-pnpm run dev:both
+# Run all applications simultaneously in development mode
+pnpm run dev
 
-# Or run individual apps
-pnpm run dev:server    # Run only 402-server
-pnpm run dev:agent     # Run only xmtp-agent
+# Run individual applications
+pnpm run dev:402-server    # Run only the 402 server
+pnpm run dev:402-agent     # Run only the 402 agent
+pnpm run dev:worldstore    # Run only the worldstore agent
 
 # Production mode
-pnpm run start:both    # Run both apps in production
+pnpm run start:402-server  # Run 402 server in production
+pnpm run start:402-agent   # Run 402 agent in production
+pnpm run start:worldstore  # Run worldstore agent in production
 
 # Build all packages
 pnpm build
@@ -49,14 +56,15 @@ pnpm test
 ## Workspace Commands
 
 ### Running Applications
-- `pnpm run dev:both` - Run both apps simultaneously in development mode
-- `pnpm run start:both` - Run both apps simultaneously in production mode
-- `pnpm run dev:server` - Run only the 402-server in development
-- `pnpm run dev:agent` - Run only the xmtp-agent in development
-- `pnpm run start:server` - Run only the 402-server in production
+- `pnpm dev` - Start all development servers (runs each package's dev script)
+- `pnpm run dev:402-server` - Run only the x402 server in development
+- `pnpm run dev:402-agent` - Run only the x402 agent in development
+- `pnpm run dev:worldstore` - Run only the worldstore agent in development
+- `pnpm run start:402-server` - Run only the x402 server in production
+- `pnpm run start:402-agent` - Run only the x402 agent in production
+- `pnpm run start:worldstore` - Run only the worldstore agent in production
 
 ### Development Commands
-- `pnpm dev` - Start all development servers (runs each package's dev script)
 - `pnpm build` - Build all packages
 - `pnpm lint` - Run ESLint on all packages
 - `pnpm test` - Run tests on all packages
