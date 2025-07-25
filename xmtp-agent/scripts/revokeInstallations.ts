@@ -20,10 +20,10 @@ async function main() {
   if (!inboxId) {
     console.error("Error: Inbox ID is required as a command line argument");
     console.error(
-      "Usage: yarn revoke-installations <inbox-id> [installations-to-save]",
+      "Usage: yarn revoke-installations <inbox-id> [installations-to-save]"
     );
     console.error(
-      'Example: yarn revoke-installations 743f3805fa9daaf879103bc26a2e79bb53db688088259c23cf18dcf1ea2aee64 "current-installation-id,another-installation-id"',
+      'Example: yarn revoke-installations 743f3805fa9daaf879103bc26a2e79bb53db688088259c23cf18dcf1ea2aee64 "current-installation-id,another-installation-id"'
     );
     process.exit(1);
   }
@@ -31,7 +31,7 @@ async function main() {
   // Validate inbox ID format (should be 64 hex characters)
   if (!/^[a-f0-9]{64}$/i.test(inboxId)) {
     console.error(
-      "Error: Invalid inbox ID format. Must be 64 hexadecimal characters.",
+      "Error: Invalid inbox ID format. Must be 64 hexadecimal characters."
     );
     console.error(`Provided: ${inboxId}`);
     process.exit(1);
@@ -48,18 +48,18 @@ async function main() {
   // Validate installation IDs if provided
   if (installationsToKeep.length > 0) {
     const invalidInstallations = installationsToKeep.filter(
-      (id) => !/^[a-f0-9]{64}$/i.test(id),
+      (id) => !/^[a-f0-9]{64}$/i.test(id)
     );
     if (invalidInstallations.length > 0) {
       console.error(
-        "Error: Invalid installation ID format(s). Must be 64 hexadecimal characters.",
+        "Error: Invalid installation ID format(s). Must be 64 hexadecimal characters."
       );
       console.error("Invalid IDs:", invalidInstallations.join(", "));
       console.error(
-        "Usage: Provide installation IDs separated by commas, or omit to keep only current installation.",
+        "Usage: Provide installation IDs separated by commas, or omit to keep only current installation."
       );
       console.error(
-        'Example: yarn revoke-installations <inbox-id> "installation-id1,installation-id2"',
+        'Example: yarn revoke-installations <inbox-id> "installation-id1,installation-id2"'
       );
       process.exit(1);
     }
@@ -75,7 +75,7 @@ async function main() {
   // Check if .env file exists
   if (!existsSync(envPath)) {
     console.error(
-      "Error: .env file not found. Please run 'yarn gen:keys' first to generate keys.",
+      "Error: .env file not found. Please run 'yarn gen:keys' first to generate keys."
     );
     process.exit(1);
   }
@@ -97,7 +97,7 @@ async function main() {
 
   if (missingVars.length > 0) {
     console.error(
-      `Error: Missing required environment variables: ${missingVars.join(", ")}`,
+      `Error: Missing required environment variables: ${missingVars.join(", ")}`
     );
     console.error("Please run 'yarn gen:keys' first to generate keys.");
     process.exit(1);
@@ -119,7 +119,7 @@ async function main() {
     // Get current inbox state
     const inboxState = await Client.inboxStateFromInboxIds(
       [inboxId],
-      envVars.XMTP_ENV as XmtpEnv,
+      envVars.XMTP_ENV as XmtpEnv
     );
 
     const currentInstallations = inboxState[0].installations;
@@ -128,7 +128,7 @@ async function main() {
     // If there's only 1 installation, it's the current one - don't revoke anything
     if (currentInstallations.length === 1) {
       console.log(
-        `✓ Only 1 installation found - this is the current one, nothing to revoke`,
+        `✓ Only 1 installation found - this is the current one, nothing to revoke`
       );
       return;
     }
@@ -142,10 +142,10 @@ async function main() {
 
       // Validate that all specified installations actually exist
       const existingInstallationIds = currentInstallations.map(
-        (inst) => inst.id,
+        (inst) => inst.id
       );
       const nonExistentInstallations = installationsToKeepIds.filter(
-        (id) => !existingInstallationIds.includes(id),
+        (id) => !existingInstallationIds.includes(id)
       );
 
       if (nonExistentInstallations.length > 0) {
@@ -153,38 +153,38 @@ async function main() {
         console.error("Non-existent IDs:", nonExistentInstallations.join(", "));
         console.error(
           "Available installation IDs:",
-          existingInstallationIds.join(", "),
+          existingInstallationIds.join(", ")
         );
         process.exit(1);
       }
     } else {
       // Require explicit specification of installations to keep
       console.error(
-        "Error: No installations specified to keep. Please provide installation IDs to keep.",
+        "Error: No installations specified to keep. Please provide installation IDs to keep."
       );
       console.error(
         "Available installation IDs:",
-        currentInstallations.map((inst) => inst.id).join(", "),
+        currentInstallations.map((inst) => inst.id).join(", ")
       );
       console.error(
-        'Usage: yarn revoke-installations <inbox-id> "installation-id1,installation-id2"',
+        'Usage: yarn revoke-installations <inbox-id> "installation-id1,installation-id2"'
       );
       process.exit(1);
     }
 
     // Find installations to revoke (all except the ones to keep)
     const installationsToRevoke = currentInstallations.filter(
-      (installation) => !installationsToKeepIds.includes(installation.id),
+      (installation) => !installationsToKeepIds.includes(installation.id)
     );
 
     console.log(
-      `Available for revocation: ${installationsToRevoke.length} (keeping ${installationsToKeepIds.length})`,
+      `Available for revocation: ${installationsToRevoke.length} (keeping ${installationsToKeepIds.length})`
     );
 
     // Safety check: if no installations are available for revocation, don't proceed
     if (installationsToRevoke.length === 0) {
       console.log(
-        `✓ No installations to revoke - all specified installations are already kept`,
+        `✓ No installations to revoke - all specified installations are already kept`
       );
       return;
     }
@@ -194,7 +194,7 @@ async function main() {
       currentInstallations.length - installationsToRevoke.length;
     if (remainingInstallations === 0) {
       console.error(
-        "Error: Cannot revoke all installations. At least 1 installation must remain.",
+        "Error: Cannot revoke all installations. At least 1 installation must remain."
       );
       console.error("Current installations:", currentInstallations.length);
       console.error("Installations to revoke:", installationsToRevoke.length);
@@ -204,7 +204,7 @@ async function main() {
 
     // Revoke the installations
     const installationsToRevokeBytes = installationsToRevoke.map(
-      (installation) => installation.bytes,
+      (installation) => installation.bytes
     );
 
     console.log(`Revoking ${installationsToRevoke.length} installations...`);
@@ -213,7 +213,7 @@ async function main() {
       signer,
       inboxId,
       installationsToRevokeBytes,
-      envVars.XMTP_ENV as XmtpEnv,
+      envVars.XMTP_ENV as XmtpEnv
     );
 
     console.log(`✓ Revoked ${installationsToRevoke.length} installations`);
@@ -221,10 +221,10 @@ async function main() {
     // Get final state to confirm
     const finalInboxState = await Client.inboxStateFromInboxIds(
       [inboxId],
-      envVars.XMTP_ENV as XmtpEnv,
+      envVars.XMTP_ENV as XmtpEnv
     );
     console.log(
-      `✓ Final installations: ${finalInboxState[0].installations.length}`,
+      `✓ Final installations: ${finalInboxState[0].installations.length}`
     );
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
