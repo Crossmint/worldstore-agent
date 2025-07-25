@@ -1,3 +1,4 @@
 packages:
-  - "402-server"
+  - "xmtp-402-agent/server"
+  - "xmtp-402-agent/agent"
   - "xmtp-agent"
