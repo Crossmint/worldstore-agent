@@ -7,8 +7,9 @@
     "allowSyntheticDefaultImports": true,
     "strict": false,
     "skipLibCheck": true,
-    "outDir": "./dist",
+    "noEmit": true,
     "rootDir": ".",
+    "outDir": "./dist",
     "baseUrl": ".",
     "paths": {
       "@helpers/*": ["./helpers/*"],
@@ -18,9 +19,7 @@
     "noImplicitAny": false,
     "strictNullChecks": false,
     "strictFunctionTypes": false,
-    "noImplicitReturns": false,
-    "declaration": true,
-    "sourceMap": true
+    "noImplicitReturns": false
   },
   "include": ["./**/*", "./types.d.ts"],
   "exclude": ["node_modules", "dist", ".data"]

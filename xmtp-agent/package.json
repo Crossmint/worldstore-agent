@@ -5,9 +5,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc",
+    "build": "echo 'using tsx directly",
     "dev": "tsx --watch index.ts",
-    "start": "node dist/index.js",
+    "start": "tsx index.ts",
     "prod": "tsx index.ts",
     "gen:keys": "tsx scripts/generateKeys.ts",
     "migrate": "tsx scripts/migrate.ts migrate",
