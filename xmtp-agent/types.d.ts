@@ -1,5 +1,5 @@
-declare module '@langchain/core/tools' {
-  import { z } from 'zod';
+declare module "@langchain/core/tools" {
+  import { z } from "zod";
 
   export interface ToolInputSchemaBase {
     [key: string]: any;
@@ -8,7 +8,7 @@ declare module '@langchain/core/tools' {
   export interface StructuredToolInterface<
     T extends ToolInputSchemaBase = ToolInputSchemaBase,
     U = any,
-    V = any
+    V = any,
   > {
     name: string;
     description: string;
@@ -25,7 +25,10 @@ declare module '@langchain/core/tools' {
     invoke?: (input: T, config?: any) => Promise<U>;
     batch?: (inputs: T[], config?: any) => Promise<U[]>;
     stream?: (input: T, config?: any) => AsyncGenerator<U>;
-    transform?: (generator: AsyncGenerator<T>, config?: any) => AsyncGenerator<U>;
+    transform?: (
+      generator: AsyncGenerator<T>,
+      config?: any
+    ) => AsyncGenerator<U>;
 
     // Additional properties
     [key: string]: any;
@@ -34,8 +37,9 @@ declare module '@langchain/core/tools' {
   export class DynamicStructuredTool<
     T extends Record<string, any> = Record<string, any>,
     U = any,
-    V = any
-  > implements StructuredToolInterface<T, U, V> {
+    V = any,
+  > implements StructuredToolInterface<T, U, V>
+  {
     name: string;
     description: string;
     schema: any;
@@ -51,7 +55,10 @@ declare module '@langchain/core/tools' {
     invoke?: (input: T, config?: any) => Promise<U>;
     batch?: (inputs: T[], config?: any) => Promise<U[]>;
     stream?: (input: T, config?: any) => AsyncGenerator<U>;
-    transform?: (generator: AsyncGenerator<T>, config?: any) => AsyncGenerator<U>;
+    transform?: (
+      generator: AsyncGenerator<T>,
+      config?: any
+    ) => AsyncGenerator<U>;
 
     constructor(config: {
       name: string;
@@ -65,8 +72,12 @@ declare module '@langchain/core/tools' {
   }
 }
 
-declare module 'zod' {
-  interface ZodType<Output = any, Def extends ZodTypeDef = ZodTypeDef, Input = Output> {
+declare module "zod" {
+  interface ZodType<
+    Output = any,
+    Def extends ZodTypeDef = ZodTypeDef,
+    Input = Output,
+  > {
     // Ensure Zod types are compatible with tool schemas
     _type?: Output;
     _output?: Output;
@@ -88,7 +99,7 @@ declare global {
 }
 
 // Module augmentation for better type inference
-declare module '@langchain/core/tools' {
+declare module "@langchain/core/tools" {
   export interface BaseTool {
     name: string;
     description: string;
@@ -99,7 +110,7 @@ declare module '@langchain/core/tools' {
 }
 
 // Fix for schema type compatibility
-declare module '@langchain/core/tools' {
+declare module "@langchain/core/tools" {
   export type ToolInputSchema = Record<string, any> | any;
   export type ToolOutputSchema = any;
 
@@ -112,7 +123,7 @@ declare module '@langchain/core/tools' {
 }
 
 // Additional type fixes for LangChain compatibility
-declare module '@langchain/core/tools' {
+declare module "@langchain/core/tools" {
   export class Tool {
     name: string;
     description: string;
@@ -124,7 +135,10 @@ declare module '@langchain/core/tools' {
     invoke(input: Input, options?: any): Promise<Output>;
     batch?(inputs: Input[], options?: any): Promise<Output[]>;
     stream?(input: Input, options?: any): AsyncGenerator<Output>;
-    transform?(generator: AsyncGenerator<Input>, options?: any): AsyncGenerator<Output>;
+    transform?(
+      generator: AsyncGenerator<Input>,
+      options?: any
+    ): AsyncGenerator<Output>;
   }
 }
 

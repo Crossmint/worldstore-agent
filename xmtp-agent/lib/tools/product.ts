@@ -1,7 +1,5 @@
 import { logger } from "@helpers/logger";
-import {
-  DynamicStructuredTool
-} from "@langchain/core/tools";
+import { DynamicStructuredTool } from "@langchain/core/tools";
 import { z } from "zod";
 import { loadUserProfile } from "@helpers/loadUserProfile";
 import { getWalletClientForUser } from "@helpers/getWalletClientForUser";

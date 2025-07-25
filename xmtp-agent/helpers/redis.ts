@@ -28,14 +28,14 @@ class RedisClient {
   }
 
   async connect(): Promise<void> {
-    if (this.client.status === 'ready' || this.client.status === 'connecting') {
+    if (this.client.status === "ready" || this.client.status === "connecting") {
       return;
     }
 
     try {
       await this.client.connect();
     } catch (error) {
-      if (error.message?.includes('already connecting/connected')) {
+      if (error.message?.includes("already connecting/connected")) {
         return;
       }
       throw error;
@@ -155,11 +155,11 @@ class RedisClient {
   async searchUsers(query: string): Promise<UserProfile[]> {
     try {
       // Simple pattern-based search using SCAN
-      const keys = await this.client.keys('user:*');
+      const keys = await this.client.keys("user:*");
       const users: UserProfile[] = [];
 
       for (const key of keys) {
-        const profile = await this.loadUserProfile(key.replace('user:', ''));
+        const profile = await this.loadUserProfile(key.replace("user:", ""));
         if (profile && this.matchesQuery(profile, query)) {
           users.push(profile);
         }
@@ -180,21 +180,21 @@ class RedisClient {
       profile.inboxId,
       profile.shippingAddress?.city,
       profile.shippingAddress?.state,
-      profile.walletAddress
+      profile.walletAddress,
     ].filter(Boolean);
 
-    return fields.some(field =>
+    return fields.some((field) =>
       field?.toString().toLowerCase().includes(searchText)
     );
   }
 
   // Get all user profiles (for admin/debugging)
   async getAllUsers(): Promise<UserProfile[]> {
-    const keys = await this.client.keys('user:*');
+    const keys = await this.client.keys("user:*");
     const users: UserProfile[] = [];
 
     for (const key of keys) {
-      const profile = await this.loadUserProfile(key.replace('user:', ''));
+      const profile = await this.loadUserProfile(key.replace("user:", ""));
       if (profile) {
         users.push(profile);
       }
