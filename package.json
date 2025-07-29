@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "pnpm -r run build",
+    "start": "pnpm -F agent run start",
     "dev": "pnpm -r run dev",
     "dev:server": "pnpm -F server run dev",
     "dev:agent": "pnpm -F agent run dev",
@@ -20,8 +21,8 @@
     "test": "pnpm -r run test"
   },
   "workspaces": [
-    "worldstore-agent/server",
-    "worldstore-agent/agent"
+    "agent",
+    "server"
   ],
   "devDependencies": {
     "concurrently": "^8.2.2"
