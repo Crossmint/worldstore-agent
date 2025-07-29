@@ -1,18 +1,18 @@
 {
-  "name": "x402-worldstore",
+  "name": "worldstore-agent",
   "version": "1.0.0",
-  "description": "x402 payment protocol integration with Crossmint Worldstore and XMTP agent",
+  "description": "example agent implementations for Crossmint's worldstore APIs.",
   "private": true,
   "type": "module",
   "scripts": {
     "build": "pnpm -r run build",
     "dev": "pnpm -r run dev",
-    "dev:server": "pnpm -F x402-crossmint-api run dev",
-    "dev:agent": "pnpm -F crossmint-xmtp-agent run dev",
-    "dev:both": "concurrently \"pnpm dev:server\" \"pnpm dev:agent\" --names \"server,agent\" --prefix-colors \"blue,green\"",
-    "start:server": "pnpm -F x402-crossmint-api run start",
-    "start:agent": "pnpm -F crossmint-xmtp-agent run dev",
-    "start:both": "concurrently \"pnpm start:server\" \"pnpm start:agent\" --names \"server,agent\" --prefix-colors \"blue,green\"",
+    "dev:402-server": "pnpm -F x402-crossmint-api run dev",
+    "dev:402-agent": "pnpm -F crossmint-x402-agent run dev",
+    "dev:worldstore-agent": "pnpm -F crossmint-xmtp-agent run dev",
+    "start:402-server": "pnpm -F x402-crossmint-api run start",
+    "start:402-agent": "pnpm -F crossmint-x402-agent run start",
+    "start:worldstore": "pnpm -F crossmint-xmtp-agent run start",
     "lint": "pnpm -r run lint",
     "lint:check": "pnpm -r run lint:check",
     "format": "pnpm -r run format",
@@ -22,7 +22,8 @@
     "test": "pnpm -r run test"
   },
   "workspaces": [
-    "402-server",
+    "xmtp-402-agent/server",
+    "xmtp-402-agent/agent",
     "xmtp-agent"
   ],
   "devDependencies": {

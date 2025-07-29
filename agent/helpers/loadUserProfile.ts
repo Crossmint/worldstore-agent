@@ -1,5 +1,5 @@
 import { UserProfile } from "lib/types";
-import { loadUserProfile as redisLoadUserProfile } from "./redis";
+import { loadUserProfile as redisLoadUserProfile } from "services/redis";
 
 export const loadUserProfile = async (
   inboxId: string

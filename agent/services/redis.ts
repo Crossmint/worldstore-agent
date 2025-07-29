@@ -1,7 +1,7 @@
 import Redis from "ioredis";
-import { logger } from "./logger";
-import { UserProfile } from "../lib/types";
-import { validateEnvironment } from "./client";
+import { logger } from "../helpers/logger";
+import { UserProfile } from "lib/types";
+import { validateEnvironment } from "../helpers/client";
 
 const { REDIS_URL } = validateEnvironment(["REDIS_URL"]);
 

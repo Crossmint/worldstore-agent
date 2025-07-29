@@ -1,5 +1,5 @@
 import { Order, UserProfile } from "../lib/types";
-import { saveUserOrderId as redisSaveUserOrderId } from "./redis";
+import { saveUserOrderId as redisSaveUserOrderId } from "services/redis";
 
 export const saveUserOrderId = async ({
   profile,

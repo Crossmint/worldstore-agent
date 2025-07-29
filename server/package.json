@@ -14,8 +14,8 @@
     "test:api": "curl -s http://localhost:3000/health | json_pp"
   },
   "dependencies": {
-    "@crossmint/wallets-sdk": "^0.10.8",
     "@coinbase/x402": "^0.4.2",
+    "@crossmint/wallets-sdk": "^0.10.8",
     "axios": "^1.6.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
@@ -27,7 +27,7 @@
   },
   "devDependencies": {
     "jest": "^29.7.0",
-    "nodemon": "^3.0.1"
+    "nodemon": "^3.1.10"
   },
   "keywords": [
     "x402",

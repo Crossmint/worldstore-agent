@@ -23,10 +23,9 @@ import {
 import { USER_STORAGE_DIR } from "./helpers/constants";
 import { shoppingAssistantPrompt } from "lib/prompts";
 import { loadUserProfile } from "@helpers/loadUserProfile";
-import { redisClient } from "./helpers/redis";
-import { migrateToRedis } from "./helpers/migration";
+import { redisClient } from "services/redis";
 import { getTools } from "@lib/tools";
-import { orderProductTool } from "@lib/tools/product";
+import { orderProductTool } from "@lib/tools/order";
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { USDCHandler } from "@helpers/usdc";
 import z from "zod";
@@ -68,11 +67,6 @@ class XMTPShoppingBot {
 
       logger.success("Redis connected successfully");
 
-      // Auto-migrate existing data if filesystem storage exists
-      if (fs.existsSync(USER_STORAGE_DIR)) {
-        logger.info("Existing filesystem data detected, running migration...");
-        await migrateToRedis();
-      }
     } catch (error) {
       logger.error("Redis initialization failed:", error);
       logger.warn("Falling back to filesystem storage");

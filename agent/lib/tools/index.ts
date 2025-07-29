@@ -1,7 +1,7 @@
 import { UserProfile } from "@lib/types";
 import { getUserOnchainTools } from "./onchain";
 import { editProfileTool, readProfileTool } from "./profile";
-import { searchProductTool } from "./product";
+import { searchProductTool } from "./order";
 import { getOrderStatusTool, getUserOrderHistoryTool } from "./order";
 
 export const getTools = async (userProfile: UserProfile | null | undefined) => {

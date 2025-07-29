@@ -13,7 +13,6 @@ if (major < 20) {
 }
 
 async function main() {
-  // Get inbox ID and installations to save from command line arguments
   const inboxId = process.argv[2];
   const installationsToSave = process.argv[3];
 
