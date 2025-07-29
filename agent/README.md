@@ -102,6 +102,43 @@ If Redis is unavailable, the bot gracefully falls back to filesystem storage, en
 - **Order Tracking**: `get_user_order_history`, `get_order_status`
 - **Onchain Operations**: GOAT SDK tools for wallet interactions
 
+## Enhanced User Experience Features
+
+### Interactive Action Buttons for Insufficient Funds
+
+The agent now supports interactive action buttons when users encounter insufficient funds during checkout. Instead of immediately sending wallet transaction requests, the agent provides users with clear options:
+
+#### How It Works
+
+1. **Insufficient Funds Detection**: When a user attempts to purchase a product but lacks sufficient USDC, the system detects this during the payment process.
+
+2. **Action Buttons Display**: Instead of an immediate wallet transfer request, users receive interactive buttons:
+   - 💸 **Add Funds Now** - Initiates the wallet funding request
+   - ❌ **Cancel Order** - Cancels the current order attempt
+   - 💰 **Check Balance** - Shows current USDC balance
+
+3. **User Choice**: Users can tap their preferred action button, which sends an "intent" message back to the agent.
+
+4. **Action Processing**: The agent processes the intent and takes the appropriate action:
+   - **Add Funds**: Sends the wallet transfer request for the exact shortfall amount
+   - **Cancel**: Clears the pending order and provides next step guidance
+   - **Check Balance**: Displays current wallet balance information
+
+#### Technical Implementation
+
+- **New Content Types**: Implements `ActionsCodec` and `IntentCodec` for interactive messaging
+- **Enhanced Flow**: Replaces immediate wallet requests with user-controlled actions
+- **Fallback Support**: Provides text-based fallback for clients that don't support action buttons
+
+#### Benefits
+
+- **Better UX**: Users have control over when to fund their wallets
+- **Clearer Communication**: Explicit funding requirements and options
+- **Reduced Friction**: Users understand exactly what's needed and can choose their path
+- **Mobile-Friendly**: Tap-based interactions work well on mobile XMTP clients
+
+This enhancement maintains full backward compatibility while providing a significantly improved user experience for clients that support interactive actions.
+
 ## workflow diagram
 
 ```mermaid

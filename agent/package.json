@@ -29,6 +29,7 @@
     "@langchain/anthropic": "^0.3.25",
     "@langchain/core": "^0.3.66",
     "@langchain/langgraph": "^0.2.74",
+    "@xmtp/content-type-primitives": "^2.0.2",
     "@xmtp/content-type-wallet-send-calls": "^2.0.0",
     "@xmtp/node-sdk": "^3.2.2",
     "dotenv": "^16.4.5",

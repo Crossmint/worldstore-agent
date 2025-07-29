@@ -9,6 +9,8 @@ import { Client, type XmtpEnv, type DecodedMessage } from "@xmtp/node-sdk";
 import * as fs from "fs";
 import { WalletSendCallsCodec } from "@xmtp/content-type-wallet-send-calls";
 import { ContentTypeWalletSendCalls } from "@xmtp/content-type-wallet-send-calls";
+import { ActionsCodec, ContentTypeActions, type ActionsContent } from "./lib/types/ActionsContent";
+import { IntentCodec, type IntentContent } from "./lib/types/IntentContent";
 import { ChatAnthropic } from "@langchain/anthropic";
 import { StateGraph, END, START, Annotation } from "@langchain/langgraph";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
@@ -29,6 +31,7 @@ import { orderProductTool } from "@lib/tools/order";
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { USDCHandler } from "@helpers/usdc";
 import z from "zod";
+import { formatUnits } from "viem";
 
 const { WALLET_KEY, ENCRYPTION_KEY, XMTP_ENV, ANTHROPIC_API_KEY } =
   validateEnvironment([
@@ -43,7 +46,7 @@ class XMTPShoppingBot {
   private llm: ChatAnthropic;
   private agent: any;
 
-  private currentFundingRequirement: { [inboxId: string]: any } = {};
+  private currentFundingRequirement: { [inboxId: string]: FundingData } = {};
 
   private hostWalletAddress = "";
   constructor() {
@@ -81,6 +84,60 @@ class XMTPShoppingBot {
   }
 
   private async sendFundingRequest({
+    sender: _sender,
+    receiver: _receiver,
+    fundingData,
+    conversation,
+  }: {
+    sender: string;
+    receiver: string;
+    fundingData: FundingData;
+    conversation: any;
+  }) {
+    console.log("💰 Sending funding request", {
+      _sender,
+      _receiver,
+      fundingData,
+      conversation
+    })
+    try {
+      // Send action buttons instead of immediate wallet request
+      const fundingActions: ActionsContent = {
+        id: `funding-${Date.now()}`,
+        description: `💰 Insufficient funds detected!\n\nYou need ${parseFloat(fundingData.required).toFixed(6)} USDC but only have ${parseFloat(fundingData.current).toFixed(6)} USDC.\nShortfall: ${formatUnits(BigInt(fundingData.shortfall), 6)} USDC\n\nWhat would you like to do?`,
+        actions: [
+          {
+            id: "add-funds",
+            label: "💸 Add Funds Now",
+            style: "primary"
+          },
+          {
+            id: "cancel-order",
+            label: "❌ Cancel Order",
+            style: "secondary"
+          },
+          {
+            id: "check-balance",
+            label: "💰 Check Balance",
+            style: "secondary"
+          }
+        ]
+      };
+
+      await conversation.send(fundingActions, ContentTypeActions);
+      await conversation.sync();
+
+      logger.info("Funding action buttons sent", {
+        shortfall: fundingData.shortfall,
+        required: fundingData.required,
+        current: fundingData.current
+      });
+    } catch (error) {
+      logger.error("caught error in sendFundingRequest", error);
+    }
+  }
+
+  private async sendActualFundingRequest({
     sender,
     receiver,
     fundingData,
@@ -99,10 +156,18 @@ class XMTPShoppingBot {
         receiver, // receiver
         Number(fundingData.shortfall) // amount
       );
+      await conversation.send("💸 Preparing funding request...");
       await conversation.send(walletCalls, ContentTypeWalletSendCalls);
       await conversation.sync();
+
+      logger.info("Actual wallet funding request sent", {
+        sender,
+        receiver,
+        amount: fundingData.shortfall
+      });
     } catch (error) {
-      logger.error("caught error in sendFundingRequest", error);
+      logger.error("caught error in sendActualFundingRequest", error);
+      await conversation.send("❌ Error preparing funding request. Please try again.");
     }
   }
 
@@ -428,8 +493,10 @@ class XMTPShoppingBot {
             conversation,
           });
         }
+      } else if (message.contentType?.typeId === "intent") {
+        await this.handleIntentMessage(message, conversation, userInboxId);
       } else {
-        logger.debug("Skipping non-text message", {
+        logger.debug("Skipping unsupported message type", {
           contentType: message.contentType?.typeId,
           senderInboxId: message.senderInboxId,
         });
@@ -444,6 +511,73 @@ class XMTPShoppingBot {
           contentType: message?.contentType?.typeId,
         },
       });
+    }
+  }
+
+  private async handleIntentMessage(message: DecodedMessage, conversation: any, userInboxId: string) {
+    const intentContent = message.content as IntentContent;
+    logger.user("Processing intent", intentContent.actionId);
+
+    try {
+      switch (intentContent.actionId) {
+        case "add-funds": {
+          // Execute actual funding request
+          const fundingData = this.currentFundingRequirement[userInboxId];
+          if (fundingData) {
+            const userProfile = await loadUserProfile(userInboxId);
+            await this.sendActualFundingRequest({
+              sender: this.hostWalletAddress,
+              receiver: userProfile?.walletAddress,
+              fundingData,
+              conversation,
+            });
+          } else {
+            await conversation.send("❌ No pending funding requirement found. Please try placing your order again.");
+          }
+          break;
+        }
+
+        case "cancel-order":
+          this.currentFundingRequirement[userInboxId] = undefined;
+          await conversation.send("❌ Order cancelled. Let me know if you'd like to try something else!");
+          break;
+
+        case "check-balance":
+          // Trigger balance check tool via agent
+          await this.handleBalanceCheck(conversation, userInboxId);
+          break;
+
+        default:
+          await conversation.send(`❌ Unknown action: ${intentContent.actionId}`);
+          logger.warn("Unknown intent action", { actionId: intentContent.actionId, userInboxId });
+      }
+    } catch (error) {
+      logger.error("Error processing intent", {
+        error: error instanceof Error ? error.message : String(error),
+        actionId: intentContent.actionId,
+        userInboxId
+      });
+      await conversation.send(`❌ Error processing action: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  private async handleBalanceCheck(conversation: any, userInboxId: string) {
+    try {
+      const userProfile = await loadUserProfile(userInboxId);
+      if (!userProfile?.walletAddress) {
+        await conversation.send("❌ No wallet address found. Please complete your profile first.");
+        return;
+      }
+
+      // Note: USDCHandler balance check integration pending
+      await conversation.send("🔍 Checking your USDC balance...");
+
+      // For now, send a message that balance checking would be implemented
+      await conversation.send(`💰 Balance check initiated for wallet: ${userProfile.walletAddress.substring(0, 6)}...${userProfile.walletAddress.substring(-4)}\n\nNote: Full balance integration pending - this would show your current USDC balance on Base Sepolia.`);
+
+    } catch (error) {
+      logger.error("Error checking balance", { error, userInboxId });
+      await conversation.send("❌ Error checking balance. Please try again.");
     }
   }
 
@@ -496,10 +630,7 @@ class XMTPShoppingBot {
   }
   async initialize() {
     logger.info("Initializing XMTP Shopping Bot...");
-
-    // Initialize Redis first
     await this.initializeRedis();
-
     const signer = createSigner(WALLET_KEY); // for xmtp
     const dbEncryptionKey = getEncryptionKeyFromHex(ENCRYPTION_KEY);
     const signerIdentifier = (await signer.getIdentifier()).identifier;
@@ -507,7 +638,11 @@ class XMTPShoppingBot {
     this.xmtpClient = (await Client.create(signer, {
       dbEncryptionKey,
       env: XMTP_ENV as XmtpEnv,
-      codecs: [new WalletSendCallsCodec()],
+      codecs: [
+        new WalletSendCallsCodec(),
+        new ActionsCodec(),
+        new IntentCodec()
+      ],
       dbPath: getDbPath(`${XMTP_ENV}-${signerIdentifier}`),
     })) as Client;
 

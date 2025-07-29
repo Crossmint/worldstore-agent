@@ -175,6 +175,7 @@ export const searchProductTool = (): any => {
             rating,
             reviews,
             extracted_price,
+            thumbnail,
           }: {
             asin: string;
             title: string;
@@ -182,6 +183,7 @@ export const searchProductTool = (): any => {
             rating: number;
             reviews: number;
             extracted_price: number;
+            thumbnail: string;
           }) => {
             return {
               asin,
@@ -190,11 +192,12 @@ export const searchProductTool = (): any => {
               rating,
               reviews,
               extracted_price,
+              thumbnail
             };
           }
         )
         .slice(0, 5);
-      console.log({ items });
+      console.log({items});
       return JSON.stringify(items);
     },
   });
