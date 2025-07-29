@@ -104,7 +104,7 @@ class XMTPShoppingBot {
       // Send action buttons instead of immediate wallet request
       const fundingActions: ActionsContent = {
         id: `funding-${Date.now()}`,
-        description: `💰 Insufficient funds detected!\n\nYou need ${parseFloat(fundingData.required).toFixed(6)} USDC but only have ${parseFloat(fundingData.current).toFixed(6)} USDC.\nShortfall: ${formatUnits(BigInt(fundingData.shortfall), 6)} USDC\n\nWhat would you like to do?`,
+        description: `💰 Insufficient funds\n\nYou need ${parseFloat(fundingData.required).toFixed(6)} USDC but only have ${parseFloat(fundingData.current).toFixed(6)} USDC.\nShortfall: ${formatUnits(BigInt(fundingData.shortfall), 6)} USDC\n\nWhat would you like to do?`,
         actions: [
           {
             id: "add-funds",
