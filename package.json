@@ -7,12 +7,10 @@
   "scripts": {
     "build": "pnpm -r run build",
     "dev": "pnpm -r run dev",
-    "dev:402-server": "pnpm -F x402-crossmint-api run dev",
-    "dev:402-agent": "pnpm -F crossmint-x402-agent run dev",
-    "dev:worldstore-agent": "pnpm -F crossmint-xmtp-agent run dev",
-    "start:402-server": "pnpm -F x402-crossmint-api run start",
-    "start:402-agent": "pnpm -F crossmint-x402-agent run start",
-    "start:worldstore": "pnpm -F crossmint-xmtp-agent run start",
+    "dev:server": "pnpm -F server run dev",
+    "dev:agent": "pnpm -F agent run dev",
+    "start:server": "pnpm -F server run start",
+    "start:agent": "pnpm -F agent run start",
     "lint": "pnpm -r run lint",
     "lint:check": "pnpm -r run lint:check",
     "format": "pnpm -r run format",
@@ -22,9 +20,8 @@
     "test": "pnpm -r run test"
   },
   "workspaces": [
-    "xmtp-402-agent/server",
-    "xmtp-402-agent/agent",
-    "xmtp-agent"
+    "worldstore-agent/server",
+    "worldstore-agent/agent"
   ],
   "devDependencies": {
     "concurrently": "^8.2.2"

@@ -1,5 +1,5 @@
 {
-  "name": "crossmint-x402-agent",
+  "name": "agent",
   "version": "1.0.0",
   "description": "A collection of example recipes and integrations using Crossmint services",
   "private": true,
