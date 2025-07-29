@@ -1,4 +1,4 @@
-# x402-worldstore Monorepo
+# Worldstore Agent
 
 A pnpm workspace monorepo containing example agent implementations for Crossmint's worldstore APIs.
 
