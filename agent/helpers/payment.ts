@@ -1,7 +1,8 @@
 import { logger } from "@helpers/logger";
 import { randomBytes } from "crypto";
 import { USDCHandler } from "@helpers/usdc";
-import { InsufficientFundsError } from "@lib/types";
+import { InsufficientFundsError, type UserProfile } from "@lib/types";
+import { getWalletClientForUser } from "@helpers/getWalletClientForUser";
 
 // @ts-ignore - Using Node.js 18+ global fetch
 declare const fetch: any;
@@ -45,13 +46,14 @@ export interface OrderData {
 export async function processPayment({
   orderData,
   orderServerUrl,
-  userWalletClient,
+  userProfile,
 }: {
   orderData: OrderData;
   orderServerUrl: string;
-  userWalletClient: any;
+  userProfile: UserProfile;
 }): Promise<PaymentResult> {
   try {
+    console.log({userProfile})
     // Extract ASIN from productLocator (format: "amazon:ASIN")
     const asin = orderData.productLocator.split(':')[1];
 
@@ -80,7 +82,7 @@ export async function processPayment({
 
       logger.tool("processPayment", "Payment requirements received", { paymentRequirements });
 
-      const userWallet = userWalletClient;
+      const userWallet = getWalletClientForUser(userProfile.inboxId);
 
       const contractName = "USDC";
       const contractVersion = "2";
@@ -122,6 +124,9 @@ export async function processPayment({
       const currentBalance = parseFloat(
         await usdcHandler.getUSDCBalance(userWallet.account.address)
       );
+      const hostWalletBalance = parseFloat(
+        await usdcHandler.getUSDCBalance(userProfile.hostWalletAddress)
+      );
       const requiredAmount =
         parseInt(paymentRequirements.maxAmountRequired) / Math.pow(10, 6);
 
@@ -146,6 +151,8 @@ export async function processPayment({
           current: currentBalance.toFixed(6),
           required: requiredAmount.toFixed(6),
           asin,
+          hostWalletAddress: userProfile.hostWalletAddress,
+          hostWalletBalance: hostWalletBalance.toFixed(6),
         });
       }
 

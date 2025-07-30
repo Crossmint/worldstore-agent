@@ -6,6 +6,7 @@ import { loadUserOrders } from "@helpers/loadUserOrders";
 import { loadUserProfile } from "@helpers/loadUserProfile";
 import {
   InsufficientFundsError,
+  ProfileNotFoundError,
   orderProductToolSchema,
   searchProductToolSchema,
 } from "../types";
@@ -13,7 +14,7 @@ import { saveUserOrderId } from "@helpers/saveUserOrderId";
 import { getJson } from "serpapi";
 import { validateEnvironment } from "@helpers/client";
 import { processPayment, type OrderData } from "@helpers/payment";
-import { getWalletClientForUser } from "@helpers/getWalletClientForUser";
+
 
 
 // @ts-ignore - Using Node.js 18+ global fetch
@@ -62,7 +63,6 @@ CRITICAL: Only call when user explicitly requests to purchase a specific ASIN.`,
       userInboxId,
       asin,
     }: z.infer<typeof orderProductToolSchema>) => {
-      console.log("Tool input:", { userInboxId, asin });
       const orderServerUrl = WORLDSTORE_API_URL;
       try {
         logger.tool("order_product", "Starting order process", {
@@ -73,7 +73,7 @@ CRITICAL: Only call when user explicitly requests to purchase a specific ASIN.`,
         // Load user profile
         const userProfile = await loadUserProfile(userInboxId);
         if (!userProfile || !userProfile.isComplete) {
-          return "❌ Your profile must be complete before ordering. Please provide your name, email, and shipping address first.";
+          throw new ProfileNotFoundError("Your profile must be complete before ordering. Please provide your name, email, and shipping address first.");
         }
 
         if (
@@ -81,7 +81,7 @@ CRITICAL: Only call when user explicitly requests to purchase a specific ASIN.`,
           !userProfile.shippingAddress ||
           !userProfile.name
         ) {
-          return "❌ Missing required profile information. Please complete your profile with email and shipping address.";
+          throw new ProfileNotFoundError("Missing required profile information. Please complete your profile with email and shipping address.");
         }
 
         // Use structured shipping address directly
@@ -109,14 +109,11 @@ CRITICAL: Only call when user explicitly requests to purchase a specific ASIN.`,
           orderData,
         });
 
-        // Get user wallet client
-        const userWalletClient = getWalletClientForUser(userProfile.inboxId);
-
         // Process complete payment flow using utility function
         const paymentResult = await processPayment({
           orderData,
           orderServerUrl,
-          userWalletClient,
+          userProfile,
         });
 
         if (!paymentResult.success) {
@@ -140,12 +137,9 @@ CRITICAL: Only call when user explicitly requests to purchase a specific ASIN.`,
         });
         return `🎉 Order placed successfully!\n\nOrder Details:\n- ASIN: ${asin}\n- Order ID: ${response.order.orderId || "N/A"}\n- Status: ${response.status || "Processing"}\n- Total: ${response.total || "N/A"}\n\nYour order will be shipped to:\n${userProfile.name}\n${userProfile.shippingAddress.line1}, ${userProfile.shippingAddress.city}, ${userProfile.shippingAddress.state} ${userProfile.shippingAddress.postalCode}\n\nYou should receive a confirmation email (if not received already) at: ${userProfile.email}. Here's your order id, make sure to keep it safe: ${response.order.orderId}`;
       } catch (error) {
-        console.log("caught error");
         if (error instanceof InsufficientFundsError) {
-          console.log("catching here", error);
           throw error;
         }
-        console.log("nono catching here");
         logger.error("Error processing order", error);
         return "❌ Sorry, there was an error processing your order. Please try again.";
       }
@@ -196,13 +190,12 @@ export const searchProductTool = (): any => {
             };
           }
         )
-        .slice(0, 5);
-      console.log({items});
+        // .sort(() => Math.random() - 0.5) // shuffle
+        .slice(0, 3);
       return JSON.stringify(items);
     },
   });
 };
-
 
 export const getUserOrderHistoryTool = (): any => {
   return new DynamicStructuredTool({

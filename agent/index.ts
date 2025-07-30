@@ -20,12 +20,13 @@ import {
   UserProfile,
   AgentState,
   InsufficientFundsError,
+  ProfileNotFoundError,
   FundingData,
 } from "./lib/types";
 import { USER_STORAGE_DIR } from "./helpers/constants";
 import { shoppingAssistantPrompt } from "lib/prompts";
 import { loadUserProfile } from "@helpers/loadUserProfile";
-import { redisClient } from "services/redis";
+import { redisClient, saveUserProfile } from "services/redis";
 import { getTools } from "@lib/tools";
 import { orderProductTool } from "@lib/tools/order";
 import { DynamicStructuredTool } from "@langchain/core/tools";
@@ -45,10 +46,8 @@ class XMTPShoppingBot {
   private xmtpClient!: Client;
   private llm: ChatAnthropic;
   private agent: any;
-
   private currentFundingRequirement: { [inboxId: string]: FundingData } = {};
-
-  private hostWalletAddress = "";
+  private needsProfileMenu: { [inboxId: string]: boolean } = {};
   constructor() {
     this.llm = new ChatAnthropic({
       anthropicApiKey: ANTHROPIC_API_KEY,
@@ -84,7 +83,9 @@ class XMTPShoppingBot {
   }
 
   private async sendFundingRequest({
+    // eslint-disable-next-line no-unused-vars
     sender: _sender,
+    // eslint-disable-next-line no-unused-vars
     receiver: _receiver,
     fundingData,
     conversation,
@@ -94,12 +95,6 @@ class XMTPShoppingBot {
     fundingData: FundingData;
     conversation: any;
   }) {
-    console.log("💰 Sending funding request", {
-      _sender,
-      _receiver,
-      fundingData,
-      conversation
-    })
     try {
       // Send action buttons instead of immediate wallet request
       const fundingActions: ActionsContent = {
@@ -171,6 +166,64 @@ class XMTPShoppingBot {
     }
   }
 
+  private async sendMainActionMenu(conversation: any, userInboxId: string) {
+    const mainActions: ActionsContent = {
+      id: `main-menu-${Date.now()}`,
+      description: `Welcome to Worldstore 🌟\n\nYour AI-powered shopping assistant for Amazon. What would you like to do?`,
+      actions: [
+        {
+          id: "know-more-worldstore",
+          label: "🌐 What is Worldstore",
+          style: "primary"
+        },
+        {
+          id: "start-shopping-assistant",
+          label: "🛒 Talk to your assistant",
+          style: "primary"
+        },
+        {
+          id: "view-manage-data",
+          label: "👤 Your data",
+          style: "secondary"
+        },
+        {
+          id: "view-balances",
+          label: "💰 Your balances",
+          style: "secondary"
+        }
+      ]
+    };
+
+    await conversation.send(mainActions, ContentTypeActions);
+    await conversation.sync();
+
+    logger.info("Main action menu sent", { userInboxId });
+  }
+
+  private async sendProfileActionMenu(conversation: any, userInboxId: string) {
+    const profileActions: ActionsContent = {
+      id: `profile-menu-${Date.now()}`,
+      description: `🔒 Profile Required\n\nTo place orders, we need your profile information for shipping and communication. What would you like to do?`,
+      actions: [
+        {
+          id: "create-profile",
+          label: "✅ Create your profile",
+          style: "primary"
+        },
+        {
+          id: "why-need-info",
+          label: "❓ Why do we need this information?",
+          style: "secondary"
+        }
+      ]
+    };
+
+    await conversation.send(profileActions, ContentTypeActions);
+    await conversation.sync();
+
+    logger.info("Profile action menu sent", { userInboxId });
+  }
+
   private wrapOrderProductTool(): any {
     const originalTool = orderProductTool();
 
@@ -204,6 +257,14 @@ class XMTPShoppingBot {
 
             // Return user-friendly message to LLM
             return `❌ Insufficient funds: You need ${error.fundingData.required} USDC but only have ${error.fundingData.current} USDC. Please add ${error.fundingData.shortfall} USDC to complete your order.`;
+          }
+
+          if (error instanceof ProfileNotFoundError) {
+            // Flag that we need to show profile menu after LLM response
+            this.needsProfileMenu[userInboxId] = true;
+
+            // Return user-friendly message to LLM
+            return error.message;
           }
 
           logger.tool(
@@ -437,10 +498,8 @@ class XMTPShoppingBot {
   private async handleMessage(message: DecodedMessage) {
     const agentInboxId = this.xmtpClient.inboxId;
     const userInboxId = message.senderInboxId;
-    const inboxState = await this.xmtpClient.preferences.inboxStateFromInboxIds(
-      [userInboxId]
-    );
-    this.hostWalletAddress = inboxState[0].identifiers[0].identifier as string;
+    const inboxState = await this.xmtpClient.preferences.inboxStateFromInboxIds([userInboxId]);
+    const hostWalletAddress = inboxState[0].identifiers[0].identifier as string;
     try {
       const conversation =
         await this.xmtpClient.conversations.getConversationById(
@@ -453,6 +512,41 @@ class XMTPShoppingBot {
         const messageContent = message.content as string;
         await conversation.sync();
         const conversationHistory = await conversation.messages();
+
+
+        // Check if this is a /help command or first meaningful interaction
+        const isHelpCommand = messageContent.trim().toLowerCase() === '/help';
+        const meaningfulMessages = conversationHistory
+          .filter((msg) => msg.content !== WAITING_MESSAGE)
+          .filter((msg) => msg.contentType?.typeId === "text");
+        const isFirstInteraction = meaningfulMessages.length <= 1; // Just this user message
+
+        // Check if the time difference between the last two messages is more than 3 hours
+        const isLongTimeSinceLastMessage = meaningfulMessages.length >= 2 && (() => {
+          const lastMessage = meaningfulMessages[meaningfulMessages.length - 1];
+          const secondLastMessage = meaningfulMessages[meaningfulMessages.length - 2];
+
+          // Try common timestamp property names used in XMTP messages
+          const lastMessageTime = (lastMessage as any).sentAt || (lastMessage as any).sent || (lastMessage as any).timestamp || (lastMessage as any).createdAt;
+          const secondLastMessageTime = (secondLastMessage as any).sentAt || (secondLastMessage as any).sent || (secondLastMessage as any).timestamp || (secondLastMessage as any).createdAt;
+
+          if (lastMessageTime && secondLastMessageTime) {
+            const timeDiff = Math.abs(
+              new Date(lastMessageTime).getTime() - new Date(secondLastMessageTime).getTime()
+            );
+            const threeHoursInMs = 3 * 60 * 60 * 1000; // 3 hours in milliseconds
+            return timeDiff > threeHoursInMs;
+          }
+
+          return false;
+        })();
+
+        if (isHelpCommand || isFirstInteraction || isLongTimeSinceLastMessage) {
+          await this.sendMainActionMenu(conversation, userInboxId);
+          await conversation.send("Remember: you can always type /help to see this menu again.");
+          return;
+        }
+
         const agentMessages = conversationHistory
           .filter((msg) => msg.content !== WAITING_MESSAGE)
           .filter((msg) => msg.contentType?.typeId === "text")
@@ -463,11 +557,16 @@ class XMTPShoppingBot {
           .slice(-4);
         await conversation.send(WAITING_MESSAGE);
         await conversation.sync();
+        const userProfile = {
+          ...(await loadUserProfile(userInboxId)),
+          hostWalletAddress
+        };
+        await saveUserProfile(userProfile);
         const initialState: AgentState = {
           messages: agentMessages,
           userInboxId,
           lastMessage: messageContent,
-          userProfile: await loadUserProfile(userInboxId),
+          userProfile,
           fundingData: this.currentFundingRequirement[userInboxId],
         };
 
@@ -484,7 +583,12 @@ class XMTPShoppingBot {
         }
 
         if (this.currentFundingRequirement[userInboxId]) {
-          const sender = this.hostWalletAddress;
+          // const fundingData = finalState.fundingData;
+          // const hostBalance = parseFloat(fundingData.hostWalletBalance);
+          // const shortfallInUsdc = parseInt(fundingData.shortfall) / Math.pow(10, 6);
+
+          // if (hostBalance >= shortfallInUsdc) {
+          const sender = userProfile.hostWalletAddress;
           const receiver = finalState.userProfile?.walletAddress;
           await this.sendFundingRequest({
             sender,
@@ -492,6 +596,18 @@ class XMTPShoppingBot {
             fundingData: finalState.fundingData,
             conversation,
           });
+          // } else {
+          //                await conversation.send(
+          //      `Seems like we're running a bit low on funds here. Your wallet would need to send funds to me so I can help complete your purchase. I currently have ${shortfallInUsdc.toFixed(6)} less USDC than the required amount. Could you please top up the host wallet first? Once that's done, I'll be able to send you the funds you need! 🙂`
+          //    );
+          //   await conversation.sync();
+          // }
+        }
+
+        // Check if we need to show profile menu after order attempt
+        if (this.needsProfileMenu[userInboxId]) {
+          await this.sendProfileActionMenu(conversation, userInboxId);
+          this.needsProfileMenu[userInboxId] = false; // Clear the flag
         }
       } else if (message.contentType?.typeId === "intent") {
         await this.handleIntentMessage(message, conversation, userInboxId);
@@ -526,7 +642,7 @@ class XMTPShoppingBot {
           if (fundingData) {
             const userProfile = await loadUserProfile(userInboxId);
             await this.sendActualFundingRequest({
-              sender: this.hostWalletAddress,
+              sender: userProfile.hostWalletAddress,
               receiver: userProfile?.walletAddress,
               fundingData,
               conversation,
@@ -545,6 +661,104 @@ class XMTPShoppingBot {
         case "check-balance":
           // Trigger balance check tool via agent
           await this.handleBalanceCheck(conversation, userInboxId);
+          break;
+
+        // New main menu actions
+        case "know-more-worldstore":
+          await conversation.send(`🌍 About Worldstore
+
+Worldstore is an AI-powered shopping platform that makes Amazon shopping seamless through conversational AI. We handle everything from product search to secure payments using USDC on the Base blockchain.
+
+Ready to start shopping? Type anything or use /help to see the menu again.`);
+          break;
+
+        case "start-shopping-assistant":
+          await conversation.send(`🛒 Shopping Assistant Activated!
+
+I'm your personal Amazon shopping assistant. I can help you:
+
+• Search for products by name, category, or description
+• Find the best deals and reviews
+• Place orders with secure USDC payments
+• Track your order status
+• Manage your profile and preferences
+
+Just tell me what you're looking for! For example:
+"Show me wireless headphones under $100"
+"I want to buy a coffee maker"
+"Find books about artificial intelligence"
+
+What can I help you find today?`);
+          break;
+
+        case "view-manage-data": {
+          const userProfile = await loadUserProfile(userInboxId);
+          if (userProfile && userProfile.isComplete) {
+            const line2 = userProfile.shippingAddress.line2 ? `${userProfile.shippingAddress.line2}\n` : '';
+            const walletInfo = userProfile.walletAddress ? `Wallet: ${userProfile.walletAddress}` : 'No wallet connected';
+            await conversation.send(`👤 Your Profile Data
+
+Name: ${userProfile.name}
+Email: ${userProfile.email}
+Shipping Address:
+${userProfile.shippingAddress.line1}
+${line2}${userProfile.shippingAddress.city}, ${userProfile.shippingAddress.state} ${userProfile.shippingAddress.postalCode}
+${userProfile.shippingAddress.country}
+
+${walletInfo}
+
+Order History: ${userProfile.orderHistory?.length || 0} orders
+
+To update your profile, just tell me what you'd like to change. For example: "Update my email to new@email.com" or "Change my shipping address"`);
+          } else {
+            await conversation.send(`👤 Profile Status: Incomplete
+
+You don't have a complete profile yet. To place orders, I'll need:
+• Your full name
+• Email address
+• Shipping address
+
+Would you like to create your profile now? Just say "create my profile" or provide the information directly.`);
+          }
+          break;
+        }
+
+        case "view-balances": {
+          await this.handleDetailedBalanceCheck(conversation, userInboxId);
+          break;
+        }
+
+        // New profile menu actions
+        case "create-profile":
+          await conversation.send(`✅ Let's create your profile!
+
+To get started with ordering on Amazon, I'll need a few details from you:
+
+1. Your full name (for shipping)
+2. Email address (for order confirmations)
+3. Complete shipping address
+
+You can provide this information all at once or step by step. For example:
+
+"My name is John Smith, email john@example.com, shipping to 123 Main St, Apt 4B, New York, NY 10001, US"
+
+Or tell me one piece at a time. What would you like to start with?`);
+          break;
+
+        case "why-need-info":
+          await conversation.send(`❓ Why We Need Your Information
+
+🚚 Shipping Details: We need your name and address to deliver your Amazon orders to the right place.
+
+📧 Email: Required for order confirmations, tracking updates, and customer service from Amazon.
+
+🔒 Security: All information is encrypted and stored securely. We never share your data with third parties beyond what's necessary to fulfill your orders.
+
+💳 Payments: We use USDC cryptocurrency for secure, fast payments. Your payment details are handled through blockchain technology for maximum security.
+
+🛡️ Privacy: You can view, update, or delete your information at any time by asking me.
+
+Ready to create your profile? Just say "create my profile" or provide your details whenever you're ready!`);
           break;
 
         default:
@@ -578,6 +792,67 @@ class XMTPShoppingBot {
     } catch (error) {
       logger.error("Error checking balance", { error, userInboxId });
       await conversation.send("❌ Error checking balance. Please try again.");
+    }
+  }
+
+  private async handleDetailedBalanceCheck(conversation: any, userInboxId: string) {
+    try {
+      const userProfile = await loadUserProfile(userInboxId);
+      if (!userProfile?.walletAddress) {
+        await conversation.send("❌ No wallet address found. Please complete your profile first.");
+        return;
+      }
+
+      await conversation.send("🔍 Checking your balances...");
+
+      const usdcHandler = new USDCHandler("base-sepolia");
+
+      // Check balances for both addresses
+      const [userUsdcBalance, hostUsdcBalance, userEthBalance, hostEthBalance] = await Promise.all([
+        usdcHandler.getUSDCBalance(userProfile.walletAddress),
+        usdcHandler.getUSDCBalance(userProfile.hostWalletAddress),
+        this.getETHBalance(userProfile.walletAddress),
+        this.getETHBalance(userProfile.hostWalletAddress)
+      ]);
+
+      const formatAddress = (address: string) => `${address.substring(0, 6)}...${address.slice(-4)}`;
+
+      await conversation.send(`💰 Your Wallet Balances
+
+🏠 Your Wallet Address: ${formatAddress(userProfile.walletAddress)}
+• USDC: ${parseFloat(userUsdcBalance).toFixed(4)} USDC
+• ETH: ${parseFloat(userEthBalance).toFixed(6)} ETH
+
+🎯 Host Wallet Address: ${formatAddress(userProfile.hostWalletAddress)}
+• USDC: ${parseFloat(hostUsdcBalance).toFixed(4)} USDC
+• ETH: ${parseFloat(hostEthBalance).toFixed(6)} ETH
+
+All balances are on Base Sepolia network.`);
+
+    } catch (error) {
+      logger.error("Error checking detailed balance", { error, userInboxId });
+      await conversation.send("❌ Error checking balances. Please try again.");
+    }
+  }
+
+  private async getETHBalance(address: string): Promise<string> {
+    try {
+      const { createPublicClient, http, formatEther } = await import("viem");
+      const { baseSepolia } = await import("viem/chains");
+
+      const publicClient = createPublicClient({
+        chain: baseSepolia,
+        transport: http(),
+      });
+
+      const balance = await publicClient.getBalance({
+        address: address as `0x${string}`,
+      });
+
+      return formatEther(balance);
+    } catch (error) {
+      logger.error("Error getting ETH balance", { error, address });
+      return "0.0";
     }
   }
 

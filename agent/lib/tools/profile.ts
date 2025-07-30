@@ -76,6 +76,7 @@ For addresses, parse into structured shippingAddress format:
             },
             isComplete: false,
             orderHistory: [],
+            hostWalletAddress: "",
           };
         }
 
@@ -217,6 +218,133 @@ Profile ID: ${currentProfile.inboxId}`;
       } catch (error) {
         logger.error("Error reading profile", error);
         return "❌ Error reading profile. Please try again.";
+      }
+    },
+  }) as StructuredToolInterface;
+};
+
+export const deleteProfileTool = (): StructuredToolInterface => {
+  return new DynamicStructuredTool({
+    name: "delete_profile",
+    description: `🗑️ DELETE USER PROFILE AND ALL DATA
+
+⚠️ CRITICAL - THIS ACTION IS IRREVERSIBLE ⚠️
+
+This tool permanently deletes ALL user data including:
+- Profile information (name, email, address)
+- Order history
+- Conversation cache
+- Activity tracking data
+- XMTP client data
+
+🚨 ONLY USE WHEN:
+- User explicitly types "/delete" command
+- User has confirmed deletion after seeing warning
+- This is a genuine deletion request
+
+DO NOT USE FOR:
+- General profile edits (use edit_profile)
+- Partial data removal
+- Shopping or purchase activities
+- Any other commands
+
+The tool handles the confirmation workflow and requires explicit user consent.`,
+    schema: z.object({
+      userInboxId: z.string().describe("The inbox ID of the user whose profile to delete"),
+      confirmed: z.boolean().optional().describe("Whether the user has confirmed the deletion")
+    }),
+    func: async ({ userInboxId, confirmed = false }) => {
+      try {
+        logger.tool("delete_profile", "Processing deletion request", { userInboxId, confirmed });
+
+        const currentProfile = await loadUserProfile(userInboxId);
+
+        if (!currentProfile) {
+          return `❌ No profile data found for this user. Nothing to delete.`;
+        }
+
+        // If not confirmed, show warning and ask for confirmation
+        if (!confirmed) {
+          const address = currentProfile.shippingAddress;
+          const addressDetails = address?.line1
+            ? `${address.line1}${address.line2 ? ` ${address.line2}` : ""}, ${address.city}, ${address.state} ${address.postalCode}`
+            : "Not set";
+
+          return `⚠️ **PROFILE DELETION WARNING** ⚠️
+
+You are about to permanently delete ALL of your data:
+
+📝 Profile Information:
+- Name: ${currentProfile.name || "Not set"}
+- Email: ${currentProfile.email || "Not set"}
+- Shipping Address: ${addressDetails}
+- Wallet Address: ${currentProfile.walletAddress || "Not created"}
+- Order History: ${currentProfile.orderHistory?.length || 0} orders
+
+🗑️ This will also delete:
+- All conversation history
+- Activity tracking data
+- XMTP client data
+
+❌ **THIS ACTION CANNOT BE UNDONE**
+
+To proceed with deletion, type: **"Yes, delete my profile"**
+To cancel, type anything else or just continue chatting normally.`;
+        }
+
+        // If confirmed, proceed with deletion
+        logger.warn("Proceeding with profile deletion", { userInboxId });
+
+        // Import Redis client directly to access deletion methods
+        const { redisClient } = await import("../../services/redis");
+        await redisClient.connect();
+
+        // Delete all user-related data
+        const deletionResults = [];
+
+        // 1. Delete main profile
+        const profileKey = `user:${userInboxId}`;
+        await redisClient.getClient().del(profileKey);
+        deletionResults.push("✅ Profile data");
+
+        // 2. Delete conversation cache
+        const conversationKey = `conversation:${userInboxId}`;
+        await redisClient.getClient().del(conversationKey);
+        deletionResults.push("✅ Conversation cache");
+
+        // 3. Delete activity tracking data (search for pattern)
+        const activityKeys = await redisClient.getClient().keys(`activity:${userInboxId}:*`);
+        if (activityKeys.length > 0) {
+          await redisClient.getClient().del(...activityKeys);
+          deletionResults.push(`✅ Activity tracking (${activityKeys.length} records)`);
+        }
+
+        // 4. Delete any XMTP data associated with this user
+        const xmtpKeys = await redisClient.getClient().keys(`xmtp:*${userInboxId}*`);
+        if (xmtpKeys.length > 0) {
+          await redisClient.getClient().del(...xmtpKeys);
+          deletionResults.push(`✅ XMTP data (${xmtpKeys.length} records)`);
+        }
+
+        logger.success("Profile deletion completed", {
+          userInboxId,
+          deletedKeys: deletionResults.length
+        });
+
+        return `🗑️ **PROFILE DELETION COMPLETED**
+
+The following data has been permanently deleted:
+${deletionResults.join('\n')}
+
+Your profile and all associated data have been completely removed from our system.
+
+If you wish to use our services again in the future, you'll need to create a new profile from scratch.
+
+Thank you for using Worldstore! 👋`;
+
+      } catch (error) {
+        logger.error("Error deleting profile", { userInboxId, error });
+        return "❌ Error occurred during profile deletion. Please try again or contact support.";
       }
     },
   }) as StructuredToolInterface;

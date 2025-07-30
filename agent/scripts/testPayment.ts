@@ -1,5 +1,5 @@
 import { processPayment, type OrderData } from "@helpers/payment";
-import { createUserWallet } from "@helpers/wallet";
+import { type UserProfile } from "@lib/types";
 
 async function test() {
   console.log(`\n${  "=".repeat(50)  }\n`);
@@ -22,12 +22,27 @@ async function test() {
     },
   };
 
-  const userWalletClient = createUserWallet("0x")
+  const userProfile: UserProfile = {
+    inboxId: "test-inbox-id",
+    name: "Angela",
+    email: "angela.temp+user@paella.dev",
+    shippingAddress: {
+      line1: "123 Test Street",
+      line2: "Apt 1",
+      city: "Test City",
+      state: "CA",
+      postalCode: "10001",
+      country: "US",
+    },
+    hostWalletAddress: "0x1234567890123456789012345678901234567890",
+    isComplete: true,
+    orderHistory: [],
+  };
 
   const result = await processPayment({
     orderData,
     orderServerUrl: "http://localhost:3000",
-    userWalletClient,
+    userProfile,
   });
   console.log("Result:", result.success ? "✅ Success" : `❌ ${result.error}`);
 

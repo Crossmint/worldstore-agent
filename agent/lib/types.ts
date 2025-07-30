@@ -8,6 +8,8 @@ export type FundingData = {
   current: string;
   required: string;
   asin: string;
+  hostWalletAddress: string;
+  hostWalletBalance: string;
 };
 
 export interface UserProfile {
@@ -23,6 +25,7 @@ export interface UserProfile {
     country: string;
   };
   walletAddress?: string;
+  hostWalletAddress: string;
   isComplete: boolean;
   orderHistory: Array<Order>;
 }
@@ -115,5 +118,12 @@ export class InsufficientFundsError extends Error {
   ) {
     super("Insufficient funds for transaction");
     this.name = "InsufficientFundsError";
+  }
+}
+
+export class ProfileNotFoundError extends Error {
+  constructor(message = "Profile not found or incomplete") {
+    super(message);
+    this.name = "ProfileNotFoundError";
   }
 }

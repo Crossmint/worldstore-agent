@@ -130,4 +130,4 @@ export class Logger {
 }
 
 // Create default logger instance
-export const logger = new Logger("XMTPBot");
+export const logger = new Logger("XMTPBot", LogLevel.DEBUG);
