@@ -123,6 +123,37 @@ Or tell me one piece at a time. What would you like to start with?`,
 Ready to create your profile? Just say "create my profile" or provide your details whenever you're ready!`
 };
 
+const INFORMATIONAL_MESSAGES = {
+  howItWorks: `❓ How Worldstore Works
+
+Worldstore is your AI-powered bot that combines Amazon shopping with Web3 payments.
+
+It's primary purpose is to allow you to shop on Amazon using your crypto wallet. It currently supports USDC on Base. You can interact with it using natural language. Start by selecting the assistant you'd like to use.
+
+Send /agents to see the list of assistants. Send /help to see the help menu. Send /menu to return to the main menu.
+`,
+
+  getSupport: `🆘 Need Help? We're Here for You!
+
+If you need assistance, have questions, or encounter any issues, please reach out to our support team:
+
+📧 **Email**: help@crossmint.io
+
+Our support team is available to help with:
+• Account and profile issues
+• Payment and wallet problems
+• Order questions and concerns
+• Technical troubleshooting
+• Platform guidance
+
+**Before contacting support, you can also:**
+• Type **/menu** to return to the main menu
+• Use the "❓ How it works" button for guidance
+• Try the General Assistant for platform questions
+
+We're committed to providing you with the best possible experience on Worldstore! 🌟`
+};
+
 export class IntentHandler {
   private context: IntentHandlerContext;
 
@@ -198,6 +229,23 @@ export class IntentHandler {
 
       case "why-need-info":
         await conversation.send(PROFILE_MESSAGES.whyNeedInfo);
+        return true;
+
+      default:
+        return false;
+    }
+  }
+
+  async handleInformationalActions(actionId: string): Promise<boolean> {
+    const { conversation } = this.context;
+
+    switch (actionId) {
+      case "how-it-works":
+        await conversation.send(INFORMATIONAL_MESSAGES.howItWorks);
+        return true;
+
+      case "get-support":
+        await conversation.send(INFORMATIONAL_MESSAGES.getSupport);
         return true;
 
       default:

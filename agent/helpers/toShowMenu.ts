@@ -1,13 +1,30 @@
 import { WAITING_MESSAGE } from "./constants";
 
-export const toShowMenu = (
+export type MenuType = "main" | "help" | "agents" | null;
+
+interface ConversationMessage {
+  content: unknown;
+  contentType?: { typeId: string };
+  sentAt?: string | Date;
+  sent?: string | Date;
+  timestamp?: string | Date;
+  createdAt?: string | Date;
+}
+
+export const getMenuType = (
   messageContent: string,
-  conversationHistory: any[]
-): boolean => {
-  // Check if this is a /help or /menu command
-  const isMenuCommand =
-    messageContent.trim().toLowerCase() === "/help" ||
-    messageContent.trim().toLowerCase() === "/menu";
+  conversationHistory: ConversationMessage[]
+): MenuType => {
+  const trimmedMessage = messageContent.trim().toLowerCase();
+
+  // Check for specific slash commands
+  if (trimmedMessage === "/help") {
+    return "help";
+  }
+
+  if (trimmedMessage === "/menu" || trimmedMessage === "/agents") {
+    return "agents";
+  }
 
   const meaningfulMessages = conversationHistory
     .filter((msg) => msg.content !== WAITING_MESSAGE)
@@ -25,15 +42,15 @@ export const toShowMenu = (
 
       // Try common timestamp property names used in XMTP messages
       const lastMessageTime =
-        (lastMessage as any).sentAt ||
-        (lastMessage as any).sent ||
-        (lastMessage as any).timestamp ||
-        (lastMessage as any).createdAt;
+        lastMessage.sentAt ||
+        lastMessage.sent ||
+        lastMessage.timestamp ||
+        lastMessage.createdAt;
       const secondLastMessageTime =
-        (secondLastMessage as any).sentAt ||
-        (secondLastMessage as any).sent ||
-        (secondLastMessage as any).timestamp ||
-        (secondLastMessage as any).createdAt;
+        secondLastMessage.sentAt ||
+        secondLastMessage.sent ||
+        secondLastMessage.timestamp ||
+        secondLastMessage.createdAt;
 
       if (lastMessageTime && secondLastMessageTime) {
         const timeDiff = Math.abs(
@@ -47,5 +64,18 @@ export const toShowMenu = (
       return false;
     })();
 
-  return isMenuCommand || isFirstInteraction || isLongTimeSinceLastMessage;
+  // Show main menu for first interaction or long time since last message
+  if (isFirstInteraction || isLongTimeSinceLastMessage) {
+    return "main";
+  }
+
+  return null;
+};
+
+// Backward compatibility function
+export const toShowMenu = (
+  messageContent: string,
+  conversationHistory: ConversationMessage[]
+): boolean => {
+  return getMenuType(messageContent, conversationHistory) !== null;
 };

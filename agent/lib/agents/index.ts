@@ -1,4 +1,4 @@
-export { createShoppingAgent } from "./shoppingAgent";
-export { createGeneralAgent } from "./generalAgent";
-export { createProfileAgent } from "./profileAgent";
-export { createWalletAgent } from "./walletAgent";
+export { createShoppingAgent } from "./shopping/agent";
+export { createGeneralAgent } from "./general/agent";
+export { createProfileAgent } from "./profile/agent";
+export { createWalletAgent } from "./wallet/agent";

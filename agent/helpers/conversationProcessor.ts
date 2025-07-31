@@ -62,6 +62,9 @@ export class ConversationProcessor {
     // Invoke the agent
     const finalState = await agent.invoke(initialState);
 
+    console.log({ initialState, finalState });
+    console.log({ messages: finalState.messages });
+
     // Send the agent's response
     await this.sendAgentResponse(conversation, finalState);
 

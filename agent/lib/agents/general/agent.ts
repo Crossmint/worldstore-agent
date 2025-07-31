@@ -3,7 +3,8 @@ import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { ChatAnthropic } from "@langchain/anthropic";
 import { logger } from "@helpers/logger";
 import { AgentState, UserProfile, FundingData, AGENT_EMOJIS } from "@lib/types";
-import { createQuickRepliesNode } from "../nodes/quickRepliesNode";
+// import { createQuickRepliesNode } from "@lib/nodes/quickRepliesNode";
+import { generalAssistantPrompt } from "@lib/agents/general/prompt";
 
 export const createGeneralAgent = (llm: ChatAnthropic) => {
   console.log("creating general agent")
@@ -48,15 +49,7 @@ export const createGeneralAgent = (llm: ChatAnthropic) => {
       const agent = createReactAgent({
         llm,
         tools: [], // Add general tools here - web search, info queries, etc.
-        messageModifier: `You are a helpful general assistant for Worldstore and Crossmint. You can answer questions about:
-- Worldstore: AI-powered shopping platform for Amazon with USDC payments
-- Crossmint: Web3 infrastructure company providing blockchain solutions
-- General Web3, blockchain, and cryptocurrency questions
-- Platform features and capabilities
-
-Always be helpful and informative. If users want to shop, suggest they use /menu to access the shopping assistant.
-
-Current user: ${state.userInboxId}`,
+        messageModifier: generalAssistantPrompt(state),
       });
 
             // only for observability
@@ -200,13 +193,14 @@ Current user: ${state.userInboxId}`,
     }
   };
 
-  const quickRepliesNode = createQuickRepliesNode(llm);
+  // const quickRepliesNode = createQuickRepliesNode(llm);
 
   workflow.addNode("general", generalNode);
-  workflow.addNode("suggestedReplies", quickRepliesNode);
+  // workflow.addNode("suggestedReplies", quickRepliesNode);
   (workflow as any).addEdge(START, "general");
-  (workflow as any).addEdge("general", "suggestedReplies");
-  (workflow as any).addEdge("suggestedReplies", END);
+  // (workflow as any).addEdge("general", "suggestedReplies");
+  // (workflow as any).addEdge("suggestedReplies", END);
+  (workflow as any).addEdge("general", END);
 
   return workflow.compile();
 };

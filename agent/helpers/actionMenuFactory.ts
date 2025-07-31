@@ -5,19 +5,64 @@ import { formatUnits } from "viem";
 import { logger } from "./logger";
 
 export class ActionMenuFactory {
-  async sendMainActionMenu(conversation: Conversation, userInboxId: string): Promise<void> {
+    async sendMainActionMenu(conversation: Conversation, userInboxId: string): Promise<void> {
     const mainActions: ActionsContent = {
       id: `main-menu-${Date.now()}`,
-      description: `Welcome to Worldstore 🌟\n\nYour AI-powered platform for Amazon shopping and Web3 services. Choose your assistant:`,
+      description: `Welcome to Worldstore 🌟\n\nYour AI-powered platform for Amazon shopping and Web3 services`,
       actions: [
+        {
+          id: "general-assistant",
+          label: `${AGENT_EMOJIS.GENERAL} General Assistant`,
+          style: "primary",
+        },
         {
           id: "shopping-assistant",
           label: `${AGENT_EMOJIS.SHOPPING} Shopping Assistant`,
           style: "primary",
         },
         {
+          id: "profile-management",
+          label: `${AGENT_EMOJIS.PROFILE} Manage Profile`,
+          style: "secondary",
+        },
+        {
+          id: "wallet-management",
+          label: `${AGENT_EMOJIS.WALLET} Manage Wallet`,
+          style: "secondary",
+        },
+        {
+          id: "how-it-works",
+          label: "❓ How it works",
+          style: "secondary",
+        },
+        {
+          id: "get-support",
+          label: "🆘 Get support",
+          style: "secondary",
+        },
+
+      ],
+    };
+
+    await conversation.send(mainActions, ContentTypeActions);
+    await conversation.sync();
+
+    logger.info("Main action menu sent", { userInboxId });
+  }
+
+  async sendAgentsMenu(conversation: Conversation, userInboxId: string): Promise<void> {
+    const agentsActions: ActionsContent = {
+      id: `agents-menu-${Date.now()}`,
+      description: `🤖 AI Assistants\n\nChoose your assistant to help with specific tasks:`,
+      actions: [
+        {
           id: "general-assistant",
           label: `${AGENT_EMOJIS.GENERAL} General Assistant`,
+          style: "primary",
+        },
+        {
+          id: "shopping-assistant",
+          label: `${AGENT_EMOJIS.SHOPPING} Shopping Assistant`,
           style: "primary",
         },
         {
@@ -33,10 +78,34 @@ export class ActionMenuFactory {
       ],
     };
 
-    await conversation.send(mainActions, ContentTypeActions);
+    await conversation.send(agentsActions, ContentTypeActions);
     await conversation.sync();
 
-    logger.info("Main action menu sent", { userInboxId });
+    logger.info("Agents menu sent", { userInboxId });
+  }
+
+  async sendHelpMenu(conversation: Conversation, userInboxId: string): Promise<void> {
+    const helpActions: ActionsContent = {
+      id: `help-menu-${Date.now()}`,
+      description: `❓ Help & Support\n\nGet information and assistance:`,
+      actions: [
+        {
+          id: "how-it-works",
+          label: "❓ How it works",
+          style: "primary",
+        },
+        {
+          id: "get-support",
+          label: "🆘 Get support",
+          style: "primary",
+        },
+      ],
+    };
+
+    await conversation.send(helpActions, ContentTypeActions);
+    await conversation.sync();
+
+    logger.info("Help menu sent", { userInboxId });
   }
 
   async sendProfileActionMenu(conversation: Conversation, userInboxId: string): Promise<void> {

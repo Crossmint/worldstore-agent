@@ -3,9 +3,11 @@ import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { ChatAnthropic } from "@langchain/anthropic";
 import { logger } from "@helpers/logger";
 import { AgentState, UserProfile, FundingData, AGENT_EMOJIS } from "@lib/types";
-import { createQuickRepliesNode } from "../nodes/quickRepliesNode";
+import { getTools } from "@lib/tools";
+// import { createQuickRepliesNode } from "@lib/nodes/quickRepliesNode";
+import { profileAssistantPrompt } from "@lib/agents/profile/prompt";
 
-export const createWalletAgent = (llm: ChatAnthropic) => {
+export const createProfileAgent = (llm: ChatAnthropic) => {
   const GraphState = Annotation.Root({
     messages: Annotation<any[]>({
       reducer: (x, y) => [...x, ...y],
@@ -35,31 +37,24 @@ export const createWalletAgent = (llm: ChatAnthropic) => {
 
   const workflow = new StateGraph(GraphState);
 
-  const walletNode = async (
+  const profileNode = async (
     state: AgentState
   ): Promise<Partial<AgentState>> => {
-    logger.agent("💰 Wallet agent node processing", {
+    logger.agent("👤 Profile agent node processing", {
       userInboxId: state.userInboxId,
       lastMessage: state.lastMessage,
     });
 
     try {
-      // Add wallet-specific tools here
+      const profileTools = await getTools(state.userProfile);
+      const filteredProfileTools = profileTools.filter(
+        (tool) => tool.name.includes("profile") || tool.name.includes("edit")
+      );
+
       const agent = createReactAgent({
         llm,
-        tools: [], // Add wallet management tools - balance check, transfer, etc.
-        messageModifier: `You are a wallet management assistant for Worldstore. You help users:
-- Check USDC and ETH balances on both their wallet and host wallet
-- Understand wallet addresses and transactions
-- Manage their crypto assets
-- Explain Web3 wallet concepts
-
-You can check balances, explain wallet functionality, and help with basic wallet operations.
-If users want to shop or do other tasks, suggest they use /menu to return to the main menu.
-
-Current user: ${state.userInboxId}
-User wallet: ${state.userProfile?.walletAddress ? "Connected" : "Not connected"}
-Host wallet: ${state.userProfile?.hostWalletAddress ? "Connected" : "Not connected"}`,
+        tools: filteredProfileTools,
+        messageModifier: profileAssistantPrompt(state),
       });
 
       const result = await agent.invoke({
@@ -70,7 +65,7 @@ Host wallet: ${state.userProfile?.hostWalletAddress ? "Connected" : "Not connect
       });
 
       const lastMessage = result.messages[result.messages.length - 1];
-      const responseContent = `${AGENT_EMOJIS.WALLET} ${lastMessage.content as string}`;
+      const responseContent = `${AGENT_EMOJIS.PROFILE} ${lastMessage.content as string}`;
 
       return {
         messages: [
@@ -81,7 +76,7 @@ Host wallet: ${state.userProfile?.hostWalletAddress ? "Connected" : "Not connect
         userProfile: state.userProfile || undefined,
       };
     } catch (error) {
-      logger.error("💰 Wallet agent error", {
+      logger.error("👤 Profile agent error", {
         error: error instanceof Error ? error.message : String(error),
         userInboxId: state.userInboxId,
       });
@@ -93,7 +88,7 @@ Host wallet: ${state.userProfile?.hostWalletAddress ? "Connected" : "Not connect
           {
             role: "assistant",
             content:
-              `${AGENT_EMOJIS.WALLET} ❌ Sorry, I encountered an error with wallet management. Please try again or use /menu to return to the main menu.`,
+              `${AGENT_EMOJIS.PROFILE} ❌ Sorry, I encountered an error with profile management. Please try again or use /menu to return to the main menu.`,
           },
         ],
         userProfile: undefined,
@@ -101,13 +96,14 @@ Host wallet: ${state.userProfile?.hostWalletAddress ? "Connected" : "Not connect
     }
   };
 
-  const quickRepliesNode = createQuickRepliesNode(llm);
+  // const quickRepliesNode = createQuickRepliesNode(llm);
 
-  workflow.addNode("wallet", walletNode);
-  workflow.addNode("suggestedReplies", quickRepliesNode);
-  (workflow as any).addEdge(START, "wallet");
-  (workflow as any).addEdge("wallet", "suggestedReplies");
-  (workflow as any).addEdge("suggestedReplies", END);
+  workflow.addNode("profile", profileNode);
+  // workflow.addNode("suggestedReplies", quickRepliesNode);
+  (workflow as any).addEdge(START, "profile");
+  // (workflow as any).addEdge("profile", "suggestedReplies");
+  // (workflow as any).addEdge("suggestedReplies", END);
+  (workflow as any).addEdge("profile", END);
 
   return workflow.compile();
 };

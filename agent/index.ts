@@ -3,11 +3,10 @@ import { Client, type DecodedMessage, type Conversation } from "@xmtp/node-sdk";
 import { type IntentContent } from "./lib/types/IntentContent";
 import { ChatAnthropic } from "@langchain/anthropic";
 import { logger } from "./helpers/logger";
-import { FundingData, AgentConfig, UserProfile } from "./lib/types";
+import { FundingData, UserProfile } from "./lib/types";
 import { loadUserProfile } from "@helpers/loadUserProfile";
 import { saveUserProfile } from "services/redis";
-import { DynamicStructuredTool } from "@langchain/core/tools";
-import { toShowMenu } from "@helpers/toShowMenu";
+import { getMenuType } from "@helpers/toShowMenu";
 import { UserStateManager } from "@helpers/userStateManager";
 import { ActionMenuFactory } from "@helpers/actionMenuFactory";
 import { ConversationProcessor } from "@helpers/conversationProcessor";
@@ -107,12 +106,34 @@ class XMTPShoppingBot {
         await conversation.sync();
         const conversationHistory = await conversation.messages();
 
-        if (toShowMenu(messageContent, conversationHistory)) {
+        const menuType = getMenuType(messageContent, conversationHistory);
+        if (menuType) {
           this.userStateManager.setUserContext(userInboxId, "menu");
-          await this.actionMenuFactory.sendMainActionMenu(conversation, userInboxId);
-          await conversation.send(
-            "Remember: you can always type /help or /menu to see this menu again."
-          );
+
+          switch (menuType) {
+            case "help":
+              await this.actionMenuFactory.sendHelpMenu(conversation, userInboxId);
+              await conversation.send(
+                "Use /menu or /agents to see AI assistants, or /help to return here."
+              );
+              break;
+
+            case "agents":
+              await this.actionMenuFactory.sendAgentsMenu(conversation, userInboxId);
+              await conversation.send(
+                "Use /help for information and support, or /menu to return here."
+              );
+              break;
+
+            case "main":
+            default:
+              await this.actionMenuFactory.sendMainActionMenu(conversation, userInboxId);
+              await conversation.send(
+                "Use /help for information or /menu for AI assistants."
+              );
+              break;
+          }
+
           return;
         }
 
@@ -158,6 +179,7 @@ class XMTPShoppingBot {
             await intentHandler.handleOrderManagement(intentContent.actionId) ||
             await intentHandler.handleAssistantActivation(intentContent.actionId) ||
             await intentHandler.handleProfileManagement(intentContent.actionId) ||
+            await intentHandler.handleInformationalActions(intentContent.actionId) ||
             await intentHandler.handleQuickReply(intentContent.actionId);
 
           if (!handled) {

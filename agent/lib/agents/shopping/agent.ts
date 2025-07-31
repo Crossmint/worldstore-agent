@@ -2,8 +2,8 @@ import { StateGraph, END, START, Annotation } from "@langchain/langgraph";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { logger } from "@helpers/logger";
 import { AgentState, UserProfile, FundingData, AgentConfig, AGENT_EMOJIS } from "@lib/types";
-import { shoppingAssistantPrompt } from "@lib/prompts";
-import { createQuickRepliesNode } from "../nodes/quickRepliesNode";
+import { shoppingAssistantPrompt } from "@lib/agents/shopping/prompt";
+// import { createQuickRepliesNode } from "../../nodes/quickRepliesNode";
 import { getTools } from "@lib/tools";
 
 export const createShoppingAgent = (config: AgentConfig) => {
@@ -217,16 +217,16 @@ export const createShoppingAgent = (config: AgentConfig) => {
     }
   };
 
-  const quickRepliesNode = createQuickRepliesNode(config.llm);
+  // const quickRepliesNode = createQuickRepliesNode(config.llm);
 
   // Add nodes
   workflow.addNode("shopping", shoppingNode);
-  workflow.addNode("suggestedReplies", quickRepliesNode);
+  // workflow.addNode("suggestedReplies", quickRepliesNode);
 
   // Flow: START -> shopping -> suggestedReplies -> END
   (workflow as any).addEdge(START, "shopping");
-  (workflow as any).addEdge("shopping", "suggestedReplies");
-  (workflow as any).addEdge("suggestedReplies", END);
-
+  // (workflow as any).addEdge("shopping", "suggestedReplies");
+  // (workflow as any).addEdge("suggestedReplies", END);
+  (workflow as any).addEdge("shopping", END);
   return workflow.compile();
 };
