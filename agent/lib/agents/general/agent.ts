@@ -173,6 +173,7 @@ export const createGeneralAgent = (llm: ChatAnthropic) => {
           { role: "assistant", content: responseContent },
         ],
         userProfile: state.userProfile || undefined,
+        fundingData: state.fundingData,
       };
     } catch (error) {
       logger.error("🤖 General agent error", {
@@ -190,6 +191,7 @@ export const createGeneralAgent = (llm: ChatAnthropic) => {
           },
         ],
         userProfile: undefined,
+        fundingData: state.fundingData,
       };
     }
   };

@@ -69,6 +69,7 @@ export const createWalletAgent = (llm: ChatAnthropic) => {
           { role: "assistant", content: responseContent },
         ],
         userProfile: state.userProfile || undefined,
+        fundingData: state.fundingData,
       };
     } catch (error) {
       logger.error("💰 Wallet agent error", {
@@ -86,6 +87,7 @@ export const createWalletAgent = (llm: ChatAnthropic) => {
           },
         ],
         userProfile: undefined,
+        fundingData: state.fundingData,
       };
     }
   };

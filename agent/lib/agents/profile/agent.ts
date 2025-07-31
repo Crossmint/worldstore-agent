@@ -74,6 +74,7 @@ export const createProfileAgent = (llm: ChatAnthropic) => {
           { role: "assistant", content: responseContent },
         ],
         userProfile: state.userProfile || undefined,
+        fundingData: state.fundingData,
       };
     } catch (error) {
       logger.error("👤 Profile agent error", {
@@ -91,6 +92,7 @@ export const createProfileAgent = (llm: ChatAnthropic) => {
           },
         ],
         userProfile: undefined,
+        fundingData: state.fundingData,
       };
     }
   };

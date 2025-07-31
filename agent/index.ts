@@ -109,6 +109,12 @@ class XMTPShoppingBot {
         await conversation.sync();
         const conversationHistory = await conversation.messages();
 
+        // Filter out the current message from history to prevent duplication
+        // The agents will add the current message themselves
+        const filteredHistory = conversationHistory.filter(
+          (msg) => msg.id !== message.id
+        );
+
         const menuType = getMenuType(messageContent, conversationHistory);
         if (menuType) {
           this.userStateManager.setUserContext(userInboxId, "menu");
@@ -160,7 +166,7 @@ class XMTPShoppingBot {
           userInboxId,
           messageContent,
           userProfile,
-          conversationHistory
+          filteredHistory
         );
       } else if (message.contentType?.typeId === "intent") {
         const intentContent = message.content as IntentContent;
