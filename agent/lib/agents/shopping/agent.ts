@@ -1,7 +1,13 @@
 import { StateGraph, END, START, Annotation } from "@langchain/langgraph";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { logger } from "@helpers/logger";
-import { AgentState, UserProfile, FundingData, AgentConfig, AGENT_EMOJIS } from "@lib/types";
+import {
+  AgentState,
+  UserProfile,
+  FundingData,
+  AgentConfig,
+  AGENT_EMOJIS,
+} from "@lib/types";
 import { shoppingAssistantPrompt } from "@lib/agents/shopping/prompt";
 // import { createQuickRepliesNode } from "../../nodes/quickRepliesNode";
 import { getTools } from "@lib/tools";
@@ -206,10 +212,10 @@ export const createShoppingAgent = (config: AgentConfig) => {
         messages: [
           ...state.messages,
           { role: "user", content: state.lastMessage },
-                  {
-          role: "assistant",
-          content: `${AGENT_EMOJIS.SHOPPING} ❌ Sorry, I encountered an error. Please try again.`,
-        },
+          {
+            role: "assistant",
+            content: `${AGENT_EMOJIS.SHOPPING} ❌ Sorry, I encountered an error. Please try again.`,
+          },
         ],
         userProfile: undefined,
         fundingData: config.currentFundingRequirement[state.userInboxId],

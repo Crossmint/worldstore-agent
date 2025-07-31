@@ -49,7 +49,10 @@ export class OrderToolWrapper {
   private handleOrderError(error: unknown, userInboxId: string): string {
     if (error instanceof InsufficientFundsError) {
       // Store funding requirement for later handling
-      this.userStateManager.setFundingRequirement(userInboxId, error.fundingData);
+      this.userStateManager.setFundingRequirement(
+        userInboxId,
+        error.fundingData
+      );
 
       logger.tool(
         "wrapped_order_product",

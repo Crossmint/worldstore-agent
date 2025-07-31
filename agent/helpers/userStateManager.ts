@@ -1,6 +1,11 @@
 import { FundingData } from "../lib/types";
 
-export type UserContextType = "shopping" | "general" | "profile" | "wallet" | "menu";
+export type UserContextType =
+  | "shopping"
+  | "general"
+  | "profile"
+  | "wallet"
+  | "menu";
 
 export class UserStateManager {
   private fundingRequirements = new Map<string, FundingData>();

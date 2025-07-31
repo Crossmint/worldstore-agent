@@ -25,7 +25,7 @@ export const AGENT_EMOJIS = {
   SHOPPING: "🧙‍♀️",
   GENERAL: "🤖",
   PROFILE: "👤",
-  WALLET: "💰"
+  WALLET: "💰",
 } as const;
 
 export interface UserProfile {

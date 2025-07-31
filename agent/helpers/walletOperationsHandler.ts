@@ -47,7 +47,10 @@ export class WalletOperationsHandler {
     }
   }
 
-  async handleBalanceCheck(conversation: Conversation, userInboxId: string): Promise<void> {
+  async handleBalanceCheck(
+    conversation: Conversation,
+    userInboxId: string
+  ): Promise<void> {
     try {
       const userProfile = await loadUserProfile(userInboxId);
       if (!userProfile?.walletAddress) {

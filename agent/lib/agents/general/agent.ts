@@ -7,7 +7,7 @@ import { AgentState, UserProfile, FundingData, AGENT_EMOJIS } from "@lib/types";
 import { generalAssistantPrompt } from "@lib/agents/general/prompt";
 
 export const createGeneralAgent = (llm: ChatAnthropic) => {
-  console.log("creating general agent")
+  console.log("creating general agent");
   const GraphState = Annotation.Root({
     messages: Annotation<any[]>({
       reducer: (x, y) => [...x, ...y],
@@ -52,114 +52,116 @@ export const createGeneralAgent = (llm: ChatAnthropic) => {
         messageModifier: generalAssistantPrompt(state),
       });
 
-            // only for observability
-            const callbacks = {
-              handleLLMStart: (llm: any, prompts: string[]) => {
-                logger.agent("🔍 LLM Start", {
-                  userInboxId: state.userInboxId,
-                  promptCount: prompts.length,
-                  promptPreview: prompts[0]?.substring(0, 300),
-                });
-              },
-              handleLLMEnd: (output: any) => {
-                const responseText =
-                  output.generations?.[0]?.[0]?.text ||
-                  output.text ||
-                  JSON.stringify(output);
-                logger.agent("🔍 LLM End", {
-                  userInboxId: state.userInboxId,
-                  responsePreview: responseText?.substring(0, 300),
-                  hasToolCall:
-                    responseText?.includes("order_product") ||
-                    responseText?.includes("edit_profile") ||
-                    responseText?.includes("Action:"),
-                  toolMentioned: responseText?.includes("order_product")
-                    ? "order_product"
-                    : responseText?.includes("edit_profile")
-                      ? "edit_profile"
-                      : "none",
-                });
-              },
-              handleLLMError: (error: any) => {
-                logger.agent("🔍 LLM Error", {
-                  userInboxId: state.userInboxId,
-                  error: error instanceof Error ? error.message : String(error),
-                });
-              },
-              handleText: (text: string, runId?: string) => {
-                logger.agent("📝 Agent Text", {
-                  userInboxId: state.userInboxId,
-                  text: text?.substring(0, 200),
-                  isThought: text?.includes("Thought:"),
-                  isAction: text?.includes("Action:"),
-                  isObservation: text?.includes("Observation:"),
-                  runId: runId?.substring(0, 8),
-                });
-              },
-              handleAgentAction: (action: any, runId?: string) => {
-                logger.agent("🎯 Agent Action", {
-                  userInboxId: state.userInboxId,
-                  tool: action.tool,
-                  toolInput: action.toolInput,
-                  isOrderProduct: action.tool === "order_product",
-                  isEditProfile: action.tool === "edit_profile",
-                  extractedData:
-                    action.tool === "order_product"
-                      ? action.toolInput?.asin
-                      : action.tool === "edit_profile"
-                        ? `${action.toolInput?.name || ""}|${action.toolInput?.email || ""}`
-                        : "other",
-                  runId: runId?.substring(0, 8),
-                });
-              },
-              handleToolStart: (tool: any, input: string, runId?: string) => {
-                logger.agent("🔧 Tool Start", {
-                  userInboxId: state.userInboxId,
-                  toolName: tool.name,
-                  toolInput: input,
-                  runId: runId?.substring(0, 8),
-                });
-              },
-              handleToolEnd: (output: any, runId?: string) => {
-                const outputStr =
-                  typeof output === "string" ? output : JSON.stringify(output);
-                logger.agent("🔧 Tool End", {
-                  userInboxId: state.userInboxId,
-                  outputPreview: outputStr?.substring(0, 200),
-                  success:
-                    !outputStr?.includes("error") && !outputStr?.includes("Error"),
-                  runId: runId?.substring(0, 8),
-                });
-              },
-              handleToolError: (error: any, runId?: string) => {
-                logger.agent("🔧 Tool Error", {
-                  userInboxId: state.userInboxId,
-                  error: error instanceof Error ? error.message : String(error),
-                  runId: runId?.substring(0, 8),
-                });
-              },
-              handleAgentFinish: (finish: any, runId?: string) => {
-                logger.agent("🏁 Agent Finish", {
-                  userInboxId: state.userInboxId,
-                  returnValues: finish.returnValues,
-                  finalResponse: finish.log?.substring(0, 200),
-                  runId: runId?.substring(0, 8),
-                });
-              },
-            };
-
-      const result = await agent.invoke({
-        messages: [
-          ...state.messages,
-          { role: "user", content: state.lastMessage },
-        ],
-      },
-      {
-        callbacks: [callbacks],
-        configurable: {
-          recursionLimit: 10,
+      // only for observability
+      const callbacks = {
+        handleLLMStart: (llm: any, prompts: string[]) => {
+          logger.agent("🔍 LLM Start", {
+            userInboxId: state.userInboxId,
+            promptCount: prompts.length,
+            promptPreview: prompts[0]?.substring(0, 300),
+          });
         },
-      });
+        handleLLMEnd: (output: any) => {
+          const responseText =
+            output.generations?.[0]?.[0]?.text ||
+            output.text ||
+            JSON.stringify(output);
+          logger.agent("🔍 LLM End", {
+            userInboxId: state.userInboxId,
+            responsePreview: responseText?.substring(0, 300),
+            hasToolCall:
+              responseText?.includes("order_product") ||
+              responseText?.includes("edit_profile") ||
+              responseText?.includes("Action:"),
+            toolMentioned: responseText?.includes("order_product")
+              ? "order_product"
+              : responseText?.includes("edit_profile")
+                ? "edit_profile"
+                : "none",
+          });
+        },
+        handleLLMError: (error: any) => {
+          logger.agent("🔍 LLM Error", {
+            userInboxId: state.userInboxId,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        },
+        handleText: (text: string, runId?: string) => {
+          logger.agent("📝 Agent Text", {
+            userInboxId: state.userInboxId,
+            text: text?.substring(0, 200),
+            isThought: text?.includes("Thought:"),
+            isAction: text?.includes("Action:"),
+            isObservation: text?.includes("Observation:"),
+            runId: runId?.substring(0, 8),
+          });
+        },
+        handleAgentAction: (action: any, runId?: string) => {
+          logger.agent("🎯 Agent Action", {
+            userInboxId: state.userInboxId,
+            tool: action.tool,
+            toolInput: action.toolInput,
+            isOrderProduct: action.tool === "order_product",
+            isEditProfile: action.tool === "edit_profile",
+            extractedData:
+              action.tool === "order_product"
+                ? action.toolInput?.asin
+                : action.tool === "edit_profile"
+                  ? `${action.toolInput?.name || ""}|${action.toolInput?.email || ""}`
+                  : "other",
+            runId: runId?.substring(0, 8),
+          });
+        },
+        handleToolStart: (tool: any, input: string, runId?: string) => {
+          logger.agent("🔧 Tool Start", {
+            userInboxId: state.userInboxId,
+            toolName: tool.name,
+            toolInput: input,
+            runId: runId?.substring(0, 8),
+          });
+        },
+        handleToolEnd: (output: any, runId?: string) => {
+          const outputStr =
+            typeof output === "string" ? output : JSON.stringify(output);
+          logger.agent("🔧 Tool End", {
+            userInboxId: state.userInboxId,
+            outputPreview: outputStr?.substring(0, 200),
+            success:
+              !outputStr?.includes("error") && !outputStr?.includes("Error"),
+            runId: runId?.substring(0, 8),
+          });
+        },
+        handleToolError: (error: any, runId?: string) => {
+          logger.agent("🔧 Tool Error", {
+            userInboxId: state.userInboxId,
+            error: error instanceof Error ? error.message : String(error),
+            runId: runId?.substring(0, 8),
+          });
+        },
+        handleAgentFinish: (finish: any, runId?: string) => {
+          logger.agent("🏁 Agent Finish", {
+            userInboxId: state.userInboxId,
+            returnValues: finish.returnValues,
+            finalResponse: finish.log?.substring(0, 200),
+            runId: runId?.substring(0, 8),
+          });
+        },
+      };
+
+      const result = await agent.invoke(
+        {
+          messages: [
+            ...state.messages,
+            { role: "user", content: state.lastMessage },
+          ],
+        },
+        {
+          callbacks: [callbacks],
+          configurable: {
+            recursionLimit: 10,
+          },
+        }
+      );
 
       const lastMessage = result.messages[result.messages.length - 1];
       const responseContent = `${AGENT_EMOJIS.GENERAL} ${lastMessage.content as string}`;
@@ -184,8 +186,7 @@ export const createGeneralAgent = (llm: ChatAnthropic) => {
           { role: "user", content: state.lastMessage },
           {
             role: "assistant",
-            content:
-              `${AGENT_EMOJIS.GENERAL} ❌ Sorry, I encountered an error. Please try again or use /menu to return to the main menu.`,
+            content: `${AGENT_EMOJIS.GENERAL} ❌ Sorry, I encountered an error. Please try again or use /menu to return to the main menu.`,
           },
         ],
         userProfile: undefined,

@@ -18,11 +18,18 @@ export interface IntentHandlerContext {
     conversation: Conversation;
   }) => Promise<void>;
   loadUserProfile: (id: string) => Promise<UserProfile>;
-  processMessageWithAgent: (conversation: Conversation, id: string, message: string, userProfile: UserProfile) => Promise<void>;
+  processMessageWithAgent: (
+    conversation: Conversation,
+    id: string,
+    message: string,
+    userProfile: UserProfile
+  ) => Promise<void>;
   saveUserProfile: (profile: UserProfile) => Promise<void>;
   xmtpClient: {
     preferences: {
-      inboxStateFromInboxIds: (inboxIds: string[]) => Promise<Array<{ identifiers: Array<{ identifier: string }> }>>;
+      inboxStateFromInboxIds: (
+        inboxIds: string[]
+      ) => Promise<Array<{ identifiers: Array<{ identifier: string }> }>>;
     };
   };
 }
@@ -90,7 +97,7 @@ I'm your wallet assistant for managing your crypto assets. I can help you with:
 
 Feel free to ask about your balances, wallet addresses, or any wallet-related questions!
 
-What would you like to know about your wallets?`
+What would you like to know about your wallets?`,
 };
 
 const PROFILE_MESSAGES = {
@@ -120,7 +127,7 @@ Or tell me one piece at a time. What would you like to start with?`,
 
 🛡️ Privacy: You can view, update, or delete your information at any time by asking me.
 
-Ready to create your profile? Just say "create my profile" or provide your details whenever you're ready!`
+Ready to create your profile? Just say "create my profile" or provide your details whenever you're ready!`,
 };
 
 const INFORMATIONAL_MESSAGES = {
@@ -151,7 +158,7 @@ Our support team is available to help with:
 • Use the "❓ How it works" button for guidance
 • Try the General Assistant for platform questions
 
-We're committed to providing you with the best possible experience on Worldstore! 🌟`
+We're committed to providing you with the best possible experience on Worldstore! 🌟`,
 };
 
 export class IntentHandler {
@@ -202,11 +209,26 @@ export class IntentHandler {
   async handleAssistantActivation(actionId: string): Promise<boolean> {
     const { conversation, userInboxId, setUserContext } = this.context;
 
-    const assistantMap: Record<string, { context: UserContextType; message: string }> = {
-      "shopping-assistant": { context: "shopping", message: ASSISTANT_MESSAGES.shopping },
-      "general-assistant": { context: "general", message: ASSISTANT_MESSAGES.general },
-      "profile-management": { context: "profile", message: ASSISTANT_MESSAGES.profile },
-      "wallet-management": { context: "wallet", message: ASSISTANT_MESSAGES.wallet }
+    const assistantMap: Record<
+      string,
+      { context: UserContextType; message: string }
+    > = {
+      "shopping-assistant": {
+        context: "shopping",
+        message: ASSISTANT_MESSAGES.shopping,
+      },
+      "general-assistant": {
+        context: "general",
+        message: ASSISTANT_MESSAGES.general,
+      },
+      "profile-management": {
+        context: "profile",
+        message: ASSISTANT_MESSAGES.profile,
+      },
+      "wallet-management": {
+        context: "wallet",
+        message: ASSISTANT_MESSAGES.wallet,
+      },
     };
 
     const assistant = assistantMap[actionId];
@@ -264,7 +286,11 @@ export class IntentHandler {
     // Process quick reply through the current agent context
     const userProfile = {
       ...(await this.context.loadUserProfile(userInboxId)),
-      hostWalletAddress: (await this.context.xmtpClient.preferences.inboxStateFromInboxIds([userInboxId]))[0].identifiers[0].identifier as string,
+      hostWalletAddress: (
+        await this.context.xmtpClient.preferences.inboxStateFromInboxIds([
+          userInboxId,
+        ])
+      )[0].identifiers[0].identifier as string,
     };
     await this.context.saveUserProfile(userProfile);
 

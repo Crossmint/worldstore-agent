@@ -69,17 +69,26 @@ export class ConversationProcessor {
     await this.sendAgentResponse(conversation, finalState);
 
     // Handle post-processing (funding, profile menus, quick replies)
-    await this.handlePostProcessing(conversation, userInboxId, userProfile, finalState);
+    await this.handlePostProcessing(
+      conversation,
+      userInboxId,
+      userProfile,
+      finalState
+    );
   }
 
-  private async sendWaitingMessage(conversation: Conversation, agentToUse: UserContextType): Promise<void> {
-    const agentEmoji = {
-      shopping: AGENT_EMOJIS.SHOPPING,
-      general: AGENT_EMOJIS.GENERAL,
-      profile: AGENT_EMOJIS.PROFILE,
-      wallet: AGENT_EMOJIS.WALLET,
-      menu: AGENT_EMOJIS.GENERAL,
-    }[agentToUse] || AGENT_EMOJIS.GENERAL;
+  private async sendWaitingMessage(
+    conversation: Conversation,
+    agentToUse: UserContextType
+  ): Promise<void> {
+    const agentEmoji =
+      {
+        shopping: AGENT_EMOJIS.SHOPPING,
+        general: AGENT_EMOJIS.GENERAL,
+        profile: AGENT_EMOJIS.PROFILE,
+        wallet: AGENT_EMOJIS.WALLET,
+        menu: AGENT_EMOJIS.GENERAL,
+      }[agentToUse] || AGENT_EMOJIS.GENERAL;
 
     await conversation.send(`${agentEmoji} is ${WAITING_MESSAGE}`);
     await conversation.sync();
@@ -106,7 +115,8 @@ export class ConversationProcessor {
   private getAgentConfig(): AgentConfig {
     return {
       llm: this.llm,
-      currentFundingRequirement: this.userStateManager.getAllFundingRequirements(),
+      currentFundingRequirement:
+        this.userStateManager.getAllFundingRequirements(),
       wrapOrderProductTool: () => this.orderToolWrapper.wrapOrderProductTool(),
     };
   }
@@ -123,14 +133,20 @@ export class ConversationProcessor {
     const agentInboxId = this.xmtpClient.inboxId;
 
     return conversationHistory
-      .filter((msg) => !(msg.senderInboxId === agentInboxId && (String(msg.content).includes(WAITING_MESSAGE))))
+      .filter(
+        (msg) =>
+          !(
+            msg.senderInboxId === agentInboxId &&
+            String(msg.content).includes(WAITING_MESSAGE)
+          )
+      )
       .filter((msg) => msg.contentType?.typeId === "text")
       .map((msg) => {
         const content = String(msg.content);
         let cleanContent = content;
 
         // Remove agent emojis from the beginning of messages
-        Object.values(AGENT_EMOJIS).forEach(emoji => {
+        Object.values(AGENT_EMOJIS).forEach((emoji) => {
           if (cleanContent.startsWith(`${emoji} `)) {
             cleanContent = cleanContent.substring(emoji.length + 1);
           }
@@ -138,7 +154,7 @@ export class ConversationProcessor {
 
         return {
           content: cleanContent,
-          role: msg.senderInboxId === agentInboxId ? "assistant" : "user"
+          role: msg.senderInboxId === agentInboxId ? "assistant" : "user",
         };
       })
       .slice(-20); // Keep last 20 messages
@@ -160,14 +176,19 @@ export class ConversationProcessor {
     };
   }
 
-  private async sendAgentResponse(conversation: Conversation, finalState: AgentState): Promise<void> {
+  private async sendAgentResponse(
+    conversation: Conversation,
+    finalState: AgentState
+  ): Promise<void> {
     const lastMessage = finalState.messages[finalState.messages.length - 1];
 
     if (lastMessage) {
       await conversation.send(lastMessage.content);
       await conversation.sync();
     } else {
-      await conversation.send("❌ Sorry, I couldn't generate a response. Please try again.");
+      await conversation.send(
+        "❌ Sorry, I couldn't generate a response. Please try again."
+      );
     }
   }
 
@@ -178,7 +199,12 @@ export class ConversationProcessor {
     finalState: AgentState
   ): Promise<void> {
     // Handle funding requirements
-    await this.handleFundingRequirements(conversation, userInboxId, userProfile, finalState);
+    await this.handleFundingRequirements(
+      conversation,
+      userInboxId,
+      userProfile,
+      finalState
+    );
 
     // Handle profile menu requirements
     await this.handleProfileMenuRequirements(conversation, userInboxId);
@@ -193,10 +219,18 @@ export class ConversationProcessor {
     userProfile: UserProfile | null,
     finalState: AgentState
   ): Promise<void> {
-    const fundingData = this.userStateManager.getFundingRequirement(userInboxId);
+    const fundingData =
+      this.userStateManager.getFundingRequirement(userInboxId);
 
-    if (fundingData && userProfile?.hostWalletAddress && finalState.userProfile?.walletAddress) {
-      await this.actionMenuFactory.sendFundingActionMenu(conversation, fundingData);
+    if (
+      fundingData &&
+      userProfile?.hostWalletAddress &&
+      finalState.userProfile?.walletAddress
+    ) {
+      await this.actionMenuFactory.sendFundingActionMenu(
+        conversation,
+        fundingData
+      );
     }
   }
 
@@ -205,7 +239,10 @@ export class ConversationProcessor {
     userInboxId: string
   ): Promise<void> {
     if (this.userStateManager.getNeedsProfileMenu(userInboxId)) {
-      await this.actionMenuFactory.sendProfileActionMenu(conversation, userInboxId);
+      await this.actionMenuFactory.sendProfileActionMenu(
+        conversation,
+        userInboxId
+      );
       this.userStateManager.clearProfileMenuFlag(userInboxId);
     }
   }
@@ -216,7 +253,10 @@ export class ConversationProcessor {
   ): Promise<void> {
     const quickReplies = finalState.quickReplies;
     if (quickReplies && quickReplies.length > 0) {
-      await this.actionMenuFactory.sendQuickRepliesMenu(conversation, quickReplies);
+      await this.actionMenuFactory.sendQuickRepliesMenu(
+        conversation,
+        quickReplies
+      );
     }
   }
 }

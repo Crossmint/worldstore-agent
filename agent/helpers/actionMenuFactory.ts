@@ -1,11 +1,17 @@
 import { Conversation } from "@xmtp/node-sdk";
-import { ActionsContent, ContentTypeActions } from "../lib/types/ActionsContent";
+import {
+  ActionsContent,
+  ContentTypeActions,
+} from "../lib/types/ActionsContent";
 import { AGENT_EMOJIS, FundingData } from "../lib/types";
 import { formatUnits } from "viem";
 import { logger } from "./logger";
 
 export class ActionMenuFactory {
-    async sendMainActionMenu(conversation: Conversation, userInboxId: string): Promise<void> {
+  async sendMainActionMenu(
+    conversation: Conversation,
+    userInboxId: string
+  ): Promise<void> {
     const mainActions: ActionsContent = {
       id: `main-menu-${Date.now()}`,
       description: `Welcome to Worldstore 🌟\n\nYour AI-powered platform for Amazon shopping and Web3 services`,
@@ -40,7 +46,6 @@ export class ActionMenuFactory {
           label: "🆘 Get support",
           style: "secondary",
         },
-
       ],
     };
 
@@ -50,7 +55,10 @@ export class ActionMenuFactory {
     logger.info("Main action menu sent", { userInboxId });
   }
 
-  async sendAgentsMenu(conversation: Conversation, userInboxId: string): Promise<void> {
+  async sendAgentsMenu(
+    conversation: Conversation,
+    userInboxId: string
+  ): Promise<void> {
     const agentsActions: ActionsContent = {
       id: `agents-menu-${Date.now()}`,
       description: `🤖 AI Assistants\n\nChoose your assistant to help with specific tasks:`,
@@ -84,7 +92,10 @@ export class ActionMenuFactory {
     logger.info("Agents menu sent", { userInboxId });
   }
 
-  async sendHelpMenu(conversation: Conversation, userInboxId: string): Promise<void> {
+  async sendHelpMenu(
+    conversation: Conversation,
+    userInboxId: string
+  ): Promise<void> {
     const helpActions: ActionsContent = {
       id: `help-menu-${Date.now()}`,
       description: `❓ Help & Support\n\nGet information and assistance:`,
@@ -108,7 +119,10 @@ export class ActionMenuFactory {
     logger.info("Help menu sent", { userInboxId });
   }
 
-  async sendProfileActionMenu(conversation: Conversation, userInboxId: string): Promise<void> {
+  async sendProfileActionMenu(
+    conversation: Conversation,
+    userInboxId: string
+  ): Promise<void> {
     const profileActions: ActionsContent = {
       id: `profile-menu-${Date.now()}`,
       description: `🔒 Profile Required\n\nTo place orders, we need your profile information for shipping and communication. What would you like to do?`,

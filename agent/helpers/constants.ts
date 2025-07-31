@@ -9,4 +9,4 @@ export const COMMON_RULES = `
 - Be concise in your responses.
 - Users can access the main menu anytime by typing "/help" - if they do this, they will automatically see the action menu.
 - The conversation flow is menu-driven with action buttons for key interactions.
-`
+`;

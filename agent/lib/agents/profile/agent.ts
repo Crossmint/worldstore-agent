@@ -87,8 +87,7 @@ export const createProfileAgent = (llm: ChatAnthropic) => {
           { role: "user", content: state.lastMessage },
           {
             role: "assistant",
-            content:
-              `${AGENT_EMOJIS.PROFILE} ❌ Sorry, I encountered an error with profile management. Please try again or use /menu to return to the main menu.`,
+            content: `${AGENT_EMOJIS.PROFILE} ❌ Sorry, I encountered an error with profile management. Please try again or use /menu to return to the main menu.`,
           },
         ],
         userProfile: undefined,

@@ -13,7 +13,10 @@ import { ConversationProcessor } from "@helpers/conversationProcessor";
 import { OrderToolWrapper } from "@helpers/orderToolWrapper";
 import { WalletOperationsHandler } from "@helpers/walletOperationsHandler";
 import { XMTPClientFactory } from "@helpers/xmtpClientFactory";
-import { IntentHandler, type IntentHandlerContext } from "@helpers/intentHandlers";
+import {
+  IntentHandler,
+  type IntentHandlerContext,
+} from "@helpers/intentHandlers";
 
 const { ANTHROPIC_API_KEY } = validateEnvironment(["ANTHROPIC_API_KEY"]);
 
@@ -112,14 +115,20 @@ class XMTPShoppingBot {
 
           switch (menuType) {
             case "help":
-              await this.actionMenuFactory.sendHelpMenu(conversation, userInboxId);
+              await this.actionMenuFactory.sendHelpMenu(
+                conversation,
+                userInboxId
+              );
               await conversation.send(
                 "Use /menu or /agents to see AI assistants, or /help to return here."
               );
               break;
 
             case "agents":
-              await this.actionMenuFactory.sendAgentsMenu(conversation, userInboxId);
+              await this.actionMenuFactory.sendAgentsMenu(
+                conversation,
+                userInboxId
+              );
               await conversation.send(
                 "Use /help for information and support, or /menu to return here."
               );
@@ -127,7 +136,10 @@ class XMTPShoppingBot {
 
             case "main":
             default:
-              await this.actionMenuFactory.sendMainActionMenu(conversation, userInboxId);
+              await this.actionMenuFactory.sendMainActionMenu(
+                conversation,
+                userInboxId
+              );
               await conversation.send(
                 "Use /help for information or /menu for AI assistants."
               );
@@ -150,7 +162,6 @@ class XMTPShoppingBot {
           userProfile,
           conversationHistory
         );
-
       } else if (message.contentType?.typeId === "intent") {
         const intentContent = message.content as IntentContent;
         logger.user("Processing intent", intentContent.actionId);
@@ -160,11 +171,18 @@ class XMTPShoppingBot {
           const handlerContext: IntentHandlerContext = {
             conversation,
             userInboxId,
-            setUserContext: (id: string, context: "shopping" | "general" | "profile" | "wallet" | "menu") => {
+            setUserContext: (
+              id: string,
+              context: "shopping" | "general" | "profile" | "wallet" | "menu"
+            ) => {
               this.userStateManager.setUserContext(id, context);
             },
-            handleBalanceCheck: this.walletOperationsHandler.handleBalanceCheck.bind(this.walletOperationsHandler),
-            currentFundingRequirement: this.userStateManager.getAllFundingRequirements(),
+            handleBalanceCheck:
+              this.walletOperationsHandler.handleBalanceCheck.bind(
+                this.walletOperationsHandler
+              ),
+            currentFundingRequirement:
+              this.userStateManager.getAllFundingRequirements(),
             sendActualFundingRequest: this.sendActualFundingRequest.bind(this),
             loadUserProfile,
             processMessageWithAgent: this.processMessageWithAgent.bind(this),
@@ -176,11 +194,19 @@ class XMTPShoppingBot {
 
           // Try each handler category in order
           const handled =
-            await intentHandler.handleOrderManagement(intentContent.actionId) ||
-            await intentHandler.handleAssistantActivation(intentContent.actionId) ||
-            await intentHandler.handleProfileManagement(intentContent.actionId) ||
-            await intentHandler.handleInformationalActions(intentContent.actionId) ||
-            await intentHandler.handleQuickReply(intentContent.actionId);
+            (await intentHandler.handleOrderManagement(
+              intentContent.actionId
+            )) ||
+            (await intentHandler.handleAssistantActivation(
+              intentContent.actionId
+            )) ||
+            (await intentHandler.handleProfileManagement(
+              intentContent.actionId
+            )) ||
+            (await intentHandler.handleInformationalActions(
+              intentContent.actionId
+            )) ||
+            (await intentHandler.handleQuickReply(intentContent.actionId));
 
           if (!handled) {
             await conversation.send(

@@ -82,8 +82,7 @@ export const createWalletAgent = (llm: ChatAnthropic) => {
           { role: "user", content: state.lastMessage },
           {
             role: "assistant",
-            content:
-              `${AGENT_EMOJIS.WALLET} ❌ Sorry, I encountered an error with wallet management. Please try again or use /menu to return to the main menu.`,
+            content: `${AGENT_EMOJIS.WALLET} ❌ Sorry, I encountered an error with wallet management. Please try again or use /menu to return to the main menu.`,
           },
         ],
         userProfile: undefined,

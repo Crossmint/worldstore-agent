@@ -23,7 +23,7 @@ Requirements for each quick reply:
 - Actionable and helpful for the user
 
 Recent conversation context:
-${lastFourMessages.map(msg => `${msg.role}: ${msg.content}`).join('\n')}
+${lastFourMessages.map((msg) => `${msg.role}: ${msg.content}`).join("\n")}
 
 Return ONLY a JSON array with objects containing "label" and "value" fields, where:
 - "label" is the short text shown on the button (max 15 chars)
@@ -36,7 +36,7 @@ Example format:
 ]`;
 
       const response = await llm.invoke([
-        { role: "user", content: quickRepliesPrompt }
+        { role: "user", content: quickRepliesPrompt },
       ]);
 
       // Parse the response to extract quick replies
@@ -56,10 +56,10 @@ Example format:
         if (Array.isArray(quickReplies)) {
           quickReplies = quickReplies
             .slice(0, 4)
-            .filter(reply => reply.label && reply.value)
-            .map(reply => ({
+            .filter((reply) => reply.label && reply.value)
+            .map((reply) => ({
               label: String(reply.label).substring(0, 30),
-              value: String(reply.value)
+              value: String(reply.value),
             }));
         } else {
           throw new Error("Response is not an array");
@@ -69,7 +69,7 @@ Example format:
       }
 
       return {
-        quickReplies
+        quickReplies,
       };
     } catch (error) {
       logger.error("Quick replies generation error", {
@@ -80,17 +80,20 @@ Example format:
       // Return contextual default quick replies on error
       const defaultReplies = [
         { label: "Help", value: "/help" },
-        { label: "Thanks", value: "Thank you!" }
+        { label: "Thanks", value: "Thank you!" },
       ];
 
       // Add shopping option if user isn't already shopping
       const lastMessage = state.messages[state.messages.length - 1];
       if (lastMessage && !lastMessage.content.includes("🧙‍♀️")) {
-        defaultReplies.unshift({ label: "Shop now", value: "I want to shop for something" });
+        defaultReplies.unshift({
+          label: "Shop now",
+          value: "I want to shop for something",
+        });
       }
 
       return {
-        quickReplies: defaultReplies.slice(0, 4)
+        quickReplies: defaultReplies.slice(0, 4),
       };
     }
   };
