@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { validateEnvironment } from "@helpers/client";
+import { ChatAnthropic } from "@langchain/anthropic";
+import { DynamicStructuredTool } from "@langchain/core/tools";
 
 const { WORLDSTORE_API_URL } = validateEnvironment(["WORLDSTORE_API_URL"]);
 
@@ -11,6 +13,20 @@ export type FundingData = {
   hostWalletAddress: string;
   hostWalletBalance: string;
 };
+
+export interface AgentConfig {
+  llm: ChatAnthropic;
+  currentFundingRequirement: { [inboxId: string]: FundingData };
+  wrapOrderProductTool: () => DynamicStructuredTool;
+}
+
+// Agent emoji prefixes for response identification
+export const AGENT_EMOJIS = {
+  SHOPPING: "🧙‍♀️",
+  GENERAL: "🤖",
+  PROFILE: "👤",
+  WALLET: "💰"
+} as const;
 
 export interface UserProfile {
   inboxId: string;
@@ -42,6 +58,7 @@ export interface AgentState {
   userProfile?: UserProfile | null;
   lastMessage: string;
   fundingData?: FundingData;
+  quickReplies?: Array<{ label: string; value: string }>;
 }
 
 // non-null version of AgentState

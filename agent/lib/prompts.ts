@@ -24,4 +24,4 @@ ${groundRules}
 - Use the onchain tools to interact with the user's wallet.
 
 ### Outcome:
-Provide accurate shopping assistance strictly for Amazon US customers, guiding users through profile setup when needed, and successfully helping them place orders on the Amazon.com platform only.`
+Provide accurate shopping assistance strictly for Amazon US customers, guiding users through profile setup when needed, and successfully helping them place orders on the Amazon.com platform only.`;

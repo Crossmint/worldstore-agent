@@ -2,7 +2,7 @@ import { processPayment, type OrderData } from "@helpers/payment";
 import { type UserProfile } from "@lib/types";
 
 async function test() {
-  console.log(`\n${  "=".repeat(50)  }\n`);
+  console.log(`\n${"=".repeat(50)}\n`);
   console.log("Test 1");
   const orderData: OrderData = {
     productLocator: "amazon:B004XWNHEC",
@@ -46,10 +46,9 @@ async function test() {
   });
   console.log("Result:", result.success ? "✅ Success" : `❌ ${result.error}`);
 
-  console.log(`\n${  "=".repeat(50)  }\n`);
+  console.log(`\n${"=".repeat(50)}\n`);
 
   console.log("\n🏁 Test suite completed!");
 }
-
 
 test().catch(console.error);

@@ -9,8 +9,8 @@ import {
  * Following XIP-67 specification for inline actions
  */
 export const ContentTypeIntent = new ContentTypeId({
-  authorityId: 'coinbase.com',
-  typeId: 'intent',
+  authorityId: "coinbase.com",
+  typeId: "intent",
   versionMajor: 1,
   versionMinor: 0,
 });
@@ -43,14 +43,14 @@ export class IntentCodec implements ContentCodec<IntentContent> {
 
     return {
       type: ContentTypeIntent,
-      parameters: { encoding: 'UTF-8' },
+      parameters: { encoding: "UTF-8" },
       content: new globalThis.TextEncoder().encode(JSON.stringify(content)),
     };
   }
 
   decode(content: EncodedContent): IntentContent {
     const encoding = content.parameters.encoding;
-    if (encoding && encoding !== 'UTF-8') {
+    if (encoding && encoding !== "UTF-8") {
       throw new Error(`unrecognized encoding ${encoding}`);
     }
 
@@ -76,29 +76,29 @@ export class IntentCodec implements ContentCodec<IntentContent> {
    * Validates Intent content according to specification
    */
   private validateContent(content: IntentContent): void {
-    if (!content.id || typeof content.id !== 'string') {
-      throw new Error('Intent.id is required and must be a string');
+    if (!content.id || typeof content.id !== "string") {
+      throw new Error("Intent.id is required and must be a string");
     }
 
-    if (!content.actionId || typeof content.actionId !== 'string') {
-      throw new Error('Intent.actionId is required and must be a string');
+    if (!content.actionId || typeof content.actionId !== "string") {
+      throw new Error("Intent.actionId is required and must be a string");
     }
 
     // Validate metadata if provided
     if (content.metadata !== undefined) {
       if (
-        typeof content.metadata !== 'object' ||
+        typeof content.metadata !== "object" ||
         content.metadata === null ||
         Array.isArray(content.metadata)
       ) {
-        throw new Error('Intent.metadata must be an object if provided');
+        throw new Error("Intent.metadata must be an object if provided");
       }
 
       // Check for reasonable metadata size to avoid XMTP content limits
       const metadataString = JSON.stringify(content.metadata);
       if (metadataString.length > 10000) {
         // 10KB limit for metadata
-        throw new Error('Intent.metadata is too large (exceeds 10KB limit)');
+        throw new Error("Intent.metadata is too large (exceeds 10KB limit)");
       }
     }
   }
