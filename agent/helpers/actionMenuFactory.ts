@@ -203,4 +203,33 @@ export class ActionMenuFactory {
     await conversation.send(quickRepliesActions, ContentTypeActions);
     await conversation.sync();
   }
+
+  async sendQuickBuyMenu(
+    conversation: Conversation,
+    userInboxId: string,
+    products: Array<{ asin: string; title: string }>
+  ): Promise<void> {
+    if (!products || products.length === 0) {
+      return;
+    }
+
+    const quickBuyActions: ActionsContent = {
+      id: `quick-buy-${Date.now()}`,
+      description: "🛒 Quick Buy\n\nTap any product to purchase instantly:",
+      actions: products.map((product) => ({
+        id: `buy:${product.asin}`,
+        label: `🛍️ ${product.title.substring(0, 40)}`, // Truncate to fit button
+        style: "primary" as const,
+      })),
+    };
+
+    await conversation.send(quickBuyActions, ContentTypeActions);
+    await conversation.sync();
+
+    logger.info("Quick buy menu sent", {
+      userInboxId,
+      productCount: products.length,
+      asins: products.map(p => p.asin)
+    });
+  }
 }

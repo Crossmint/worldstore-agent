@@ -211,6 +211,9 @@ export class ConversationProcessor {
 
     // Handle quick replies
     await this.handleQuickReplies(conversation, finalState);
+
+    // Handle quick buy products
+    await this.handleQuickBuy(conversation, finalState);
   }
 
   private async handleFundingRequirements(
@@ -256,6 +259,20 @@ export class ConversationProcessor {
       await this.actionMenuFactory.sendQuickRepliesMenu(
         conversation,
         quickReplies
+      );
+    }
+  }
+
+  private async handleQuickBuy(
+    conversation: Conversation,
+    finalState: AgentState
+  ): Promise<void> {
+    const quickBuy = finalState.quickBuy;
+    if (quickBuy && quickBuy.length > 0) {
+      await this.actionMenuFactory.sendQuickBuyMenu(
+        conversation,
+        finalState.userInboxId,
+        quickBuy
       );
     }
   }

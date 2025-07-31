@@ -212,6 +212,7 @@ class XMTPShoppingBot {
             (await intentHandler.handleInformationalActions(
               intentContent.actionId
             )) ||
+            (await intentHandler.handleQuickBuy(intentContent.actionId)) ||
             (await intentHandler.handleQuickReply(intentContent.actionId));
 
           if (!handled) {

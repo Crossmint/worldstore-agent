@@ -9,7 +9,7 @@ import {
   AGENT_EMOJIS,
 } from "@lib/types";
 import { shoppingAssistantPrompt } from "@lib/agents/shopping/prompt";
-// import { createQuickRepliesNode } from "../../nodes/quickRepliesNode";
+import { createQuickBuyNode } from "../../nodes/quickBuyNode";
 import { getTools } from "@lib/tools";
 
 export const createShoppingAgent = (config: AgentConfig) => {
@@ -35,6 +35,10 @@ export const createShoppingAgent = (config: AgentConfig) => {
       default: () => undefined,
     }),
     quickReplies: Annotation<Array<{ label: string; value: string }>>({
+      reducer: (x, y) => y ?? x,
+      default: () => [],
+    }),
+    quickBuy: Annotation<Array<{ asin: string; title: string }>>({
       reducer: (x, y) => y ?? x,
       default: () => [],
     }),
@@ -223,16 +227,15 @@ export const createShoppingAgent = (config: AgentConfig) => {
     }
   };
 
-  // const quickRepliesNode = createQuickRepliesNode(config.llm);
+  const quickBuyNode = createQuickBuyNode(config.llm);
 
   // Add nodes
   workflow.addNode("shopping", shoppingNode);
-  // workflow.addNode("suggestedReplies", quickRepliesNode);
+  workflow.addNode("quickBuyOptions", quickBuyNode);
 
-  // Flow: START -> shopping -> suggestedReplies -> END
+  // Flow: START -> shopping -> quickBuy -> END
   (workflow as any).addEdge(START, "shopping");
-  // (workflow as any).addEdge("shopping", "suggestedReplies");
-  // (workflow as any).addEdge("suggestedReplies", END);
-  (workflow as any).addEdge("shopping", END);
+  (workflow as any).addEdge("shopping", "quickBuyOptions");
+  (workflow as any).addEdge("quickBuyOptions", END);
   return workflow.compile();
 };

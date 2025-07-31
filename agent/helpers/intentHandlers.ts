@@ -460,4 +460,43 @@ ${parseFloat(userUSDCBalance) > 0 ? "✅ You have USDC available for shopping!" 
 
     return true;
   }
+
+  async handleQuickBuy(actionId: string): Promise<boolean> {
+    if (!actionId.startsWith("buy:")) {
+      return false;
+    }
+
+    const { conversation, userInboxId } = this.context;
+    const asin = actionId.replace("buy:", "");
+
+    // Validate ASIN format (10 characters, alphanumeric)
+    if (!asin || asin.length !== 10) {
+      await conversation.send("❌ Invalid product identifier. Please try again.");
+      return true;
+    }
+
+    // Set user context to shopping for purchase processing
+    this.context.setUserContext(userInboxId, "shopping");
+
+    // Process quick buy through shopping agent
+    const userProfile = {
+      ...(await this.context.loadUserProfile(userInboxId)),
+      hostWalletAddress: (
+        await this.context.xmtpClient.preferences.inboxStateFromInboxIds([
+          userInboxId,
+        ])
+      )[0].identifiers[0].identifier as string,
+    };
+    await this.context.saveUserProfile(userProfile);
+
+    // Send ASIN to shopping agent for immediate purchase processing
+    await this.context.processMessageWithAgent(
+      conversation,
+      userInboxId,
+      asin, // Just send the ASIN - the shopping agent will recognize this as a purchase request
+      userProfile
+    );
+
+    return true;
+  }
 }

@@ -59,6 +59,7 @@ export interface AgentState {
   lastMessage: string;
   fundingData?: FundingData;
   quickReplies?: Array<{ label: string; value: string }>;
+  quickBuy?: Array<{ asin: string; title: string }>;
 }
 
 // non-null version of AgentState
