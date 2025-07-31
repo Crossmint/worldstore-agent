@@ -53,9 +53,9 @@ export async function processPayment({
   userProfile: UserProfile;
 }): Promise<PaymentResult> {
   try {
-    console.log({userProfile})
+    console.log({ userProfile });
     // Extract ASIN from productLocator (format: "amazon:ASIN")
-    const asin = orderData.productLocator.split(':')[1];
+    const asin = orderData.productLocator.split(":")[1];
 
     logger.tool("processPayment", "Starting complete payment flow", {
       asin,
@@ -74,13 +74,18 @@ export async function processPayment({
     });
 
     if (initialResponse.status === 402) {
-      logger.tool("processPayment", "Received 402, processing payment requirement");
+      logger.tool(
+        "processPayment",
+        "Received 402, processing payment requirement"
+      );
 
       // Get payment requirements from response
       const fullResponse = await initialResponse.json();
       const paymentRequirements: PaymentRequirements = fullResponse.accepts[0];
 
-      logger.tool("processPayment", "Payment requirements received", { paymentRequirements });
+      logger.tool("processPayment", "Payment requirements received", {
+        paymentRequirements,
+      });
 
       const userWallet = getWalletClientForUser(userProfile.inboxId);
 
@@ -188,7 +193,9 @@ export async function processPayment({
         },
       };
 
-      logger.tool("processPayment", "Payment payload created", { paymentPayload });
+      logger.tool("processPayment", "Payment payload created", {
+        paymentPayload,
+      });
 
       const encodedPayment = Buffer.from(
         JSON.stringify(paymentPayload)
@@ -228,7 +235,9 @@ export async function processPayment({
     } else if (initialResponse.ok) {
       // Unexpected success without payment (shouldn't happen with x402)
       const orderResult = await initialResponse.json();
-      logger.warn("Order succeeded without payment requirement", { orderResult });
+      logger.warn("Order succeeded without payment requirement", {
+        orderResult,
+      });
       return {
         success: true,
         response: orderResult,
@@ -245,7 +254,7 @@ export async function processPayment({
       };
     }
   } catch (error) {
-    const asin = orderData.productLocator.split(':')[1];
+    const asin = orderData.productLocator.split(":")[1];
     logger.error("Error in payment flow", { error, asin, orderData });
 
     if (error instanceof InsufficientFundsError) {

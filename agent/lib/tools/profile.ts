@@ -250,12 +250,20 @@ DO NOT USE FOR:
 
 The tool handles the confirmation workflow and requires explicit user consent.`,
     schema: z.object({
-      userInboxId: z.string().describe("The inbox ID of the user whose profile to delete"),
-      confirmed: z.boolean().optional().describe("Whether the user has confirmed the deletion")
+      userInboxId: z
+        .string()
+        .describe("The inbox ID of the user whose profile to delete"),
+      confirmed: z
+        .boolean()
+        .optional()
+        .describe("Whether the user has confirmed the deletion"),
     }),
     func: async ({ userInboxId, confirmed = false }) => {
       try {
-        logger.tool("delete_profile", "Processing deletion request", { userInboxId, confirmed });
+        logger.tool("delete_profile", "Processing deletion request", {
+          userInboxId,
+          confirmed,
+        });
 
         const currentProfile = await loadUserProfile(userInboxId);
 
@@ -313,14 +321,20 @@ To cancel, type anything else or just continue chatting normally.`;
         deletionResults.push("✅ Conversation cache");
 
         // 3. Delete activity tracking data (search for pattern)
-        const activityKeys = await redisClient.getClient().keys(`activity:${userInboxId}:*`);
+        const activityKeys = await redisClient
+          .getClient()
+          .keys(`activity:${userInboxId}:*`);
         if (activityKeys.length > 0) {
           await redisClient.getClient().del(...activityKeys);
-          deletionResults.push(`✅ Activity tracking (${activityKeys.length} records)`);
+          deletionResults.push(
+            `✅ Activity tracking (${activityKeys.length} records)`
+          );
         }
 
         // 4. Delete any XMTP data associated with this user
-        const xmtpKeys = await redisClient.getClient().keys(`xmtp:*${userInboxId}*`);
+        const xmtpKeys = await redisClient
+          .getClient()
+          .keys(`xmtp:*${userInboxId}*`);
         if (xmtpKeys.length > 0) {
           await redisClient.getClient().del(...xmtpKeys);
           deletionResults.push(`✅ XMTP data (${xmtpKeys.length} records)`);
@@ -328,20 +342,19 @@ To cancel, type anything else or just continue chatting normally.`;
 
         logger.success("Profile deletion completed", {
           userInboxId,
-          deletedKeys: deletionResults.length
+          deletedKeys: deletionResults.length,
         });
 
         return `🗑️ **PROFILE DELETION COMPLETED**
 
 The following data has been permanently deleted:
-${deletionResults.join('\n')}
+${deletionResults.join("\n")}
 
 Your profile and all associated data have been completely removed from our system.
 
 If you wish to use our services again in the future, you'll need to create a new profile from scratch.
 
 Thank you for using Worldstore! 👋`;
-
       } catch (error) {
         logger.error("Error deleting profile", { userInboxId, error });
         return "❌ Error occurred during profile deletion. Please try again or contact support.";

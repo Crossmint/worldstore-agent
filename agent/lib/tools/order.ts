@@ -15,8 +15,6 @@ import { getJson } from "serpapi";
 import { validateEnvironment } from "@helpers/client";
 import { processPayment, type OrderData } from "@helpers/payment";
 
-
-
 // @ts-ignore - Using Node.js 18+ global fetch
 declare const fetch: any;
 
@@ -73,7 +71,9 @@ CRITICAL: Only call when user explicitly requests to purchase a specific ASIN.`,
         // Load user profile
         const userProfile = await loadUserProfile(userInboxId);
         if (!userProfile || !userProfile.isComplete) {
-          throw new ProfileNotFoundError("Your profile must be complete before ordering. Please provide your name, email, and shipping address first.");
+          throw new ProfileNotFoundError(
+            "Your profile must be complete before ordering. Please provide your name, email, and shipping address first."
+          );
         }
 
         if (
@@ -81,7 +81,9 @@ CRITICAL: Only call when user explicitly requests to purchase a specific ASIN.`,
           !userProfile.shippingAddress ||
           !userProfile.name
         ) {
-          throw new ProfileNotFoundError("Missing required profile information. Please complete your profile with email and shipping address.");
+          throw new ProfileNotFoundError(
+            "Missing required profile information. Please complete your profile with email and shipping address."
+          );
         }
 
         // Use structured shipping address directly
@@ -186,7 +188,7 @@ export const searchProductTool = (): any => {
               rating,
               reviews,
               extracted_price,
-              thumbnail
+              thumbnail,
             };
           }
         )

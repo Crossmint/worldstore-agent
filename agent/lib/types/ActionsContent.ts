@@ -9,8 +9,8 @@ import {
  * Following XIP-67 specification for inline actions
  */
 export const ContentTypeActions = new ContentTypeId({
-  authorityId: 'coinbase.com',
-  typeId: 'actions',
+  authorityId: "coinbase.com",
+  typeId: "actions",
   versionMajor: 1,
   versionMinor: 0,
 });
@@ -26,7 +26,7 @@ export type Action = {
   /** Optional image URL */
   imageUrl?: string;
   /** Optional visual style (primary|secondary|danger) */
-  style?: 'primary' | 'secondary' | 'danger';
+  style?: "primary" | "secondary" | "danger";
   /** Optional ISO-8601 expiration timestamp */
   expiresAt?: string;
 };
@@ -61,14 +61,14 @@ export class ActionsCodec implements ContentCodec<ActionsContent> {
 
     return {
       type: ContentTypeActions,
-      parameters: { encoding: 'UTF-8' },
+      parameters: { encoding: "UTF-8" },
       content: new globalThis.TextEncoder().encode(JSON.stringify(content)),
     };
   }
 
   decode(content: EncodedContent): ActionsContent {
     const encoding = content.parameters.encoding;
-    if (encoding && encoding !== 'UTF-8') {
+    if (encoding && encoding !== "UTF-8") {
       throw new Error(`unrecognized encoding ${encoding}`);
     }
 
@@ -85,7 +85,7 @@ export class ActionsCodec implements ContentCodec<ActionsContent> {
   fallback(content: ActionsContent): string {
     const actionList = content.actions
       .map((action, index) => `[${index + 1}] ${action.label}`)
-      .join('\n');
+      .join("\n");
     return `${content.description}\n\n${actionList}\n\nReply with the number to select`;
   }
 
@@ -97,42 +97,55 @@ export class ActionsCodec implements ContentCodec<ActionsContent> {
    * Validates Actions content according to specification
    */
   private validateContent(content: ActionsContent): void {
-    if (!content.id || typeof content.id !== 'string') {
-      throw new Error('Actions.id is required and must be a string');
+    if (!content.id || typeof content.id !== "string") {
+      throw new Error("Actions.id is required and must be a string");
     }
 
-    if (!content.description || typeof content.description !== 'string') {
-      throw new Error('Actions.description is required and must be a string');
+    if (!content.description || typeof content.description !== "string") {
+      throw new Error("Actions.description is required and must be a string");
     }
 
     if (!Array.isArray(content.actions) || content.actions.length === 0) {
-      throw new Error('Actions.actions is required and must be a non-empty array');
+      throw new Error(
+        "Actions.actions is required and must be a non-empty array"
+      );
     }
 
     if (content.actions.length > 10) {
-      throw new Error('Actions.actions cannot exceed 10 actions for UX reasons');
+      throw new Error(
+        "Actions.actions cannot exceed 10 actions for UX reasons"
+      );
     }
 
     // Validate each action
     content.actions.forEach((action, index) => {
-      if (!action.id || typeof action.id !== 'string') {
+      if (!action.id || typeof action.id !== "string") {
         throw new Error(`Action[${index}].id is required and must be a string`);
       }
 
-      if (!action.label || typeof action.label !== 'string') {
-        throw new Error(`Action[${index}].label is required and must be a string`);
+      if (!action.label || typeof action.label !== "string") {
+        throw new Error(
+          `Action[${index}].label is required and must be a string`
+        );
       }
 
       if (action.label.length > 50) {
         throw new Error(`Action[${index}].label cannot exceed 50 characters`);
       }
 
-      if (action.style && !['primary', 'secondary', 'danger'].includes(action.style)) {
-        throw new Error(`Action[${index}].style must be one of: primary, secondary, danger`);
+      if (
+        action.style &&
+        !["primary", "secondary", "danger"].includes(action.style)
+      ) {
+        throw new Error(
+          `Action[${index}].style must be one of: primary, secondary, danger`
+        );
       }
 
       if (action.expiresAt && !this.isValidISO8601(action.expiresAt)) {
-        throw new Error(`Action[${index}].expiresAt must be a valid ISO-8601 timestamp`);
+        throw new Error(
+          `Action[${index}].expiresAt must be a valid ISO-8601 timestamp`
+        );
       }
     });
 
@@ -140,11 +153,13 @@ export class ActionsCodec implements ContentCodec<ActionsContent> {
     const actionIds = content.actions.map((action) => action.id);
     const uniqueActionIds = new Set(actionIds);
     if (actionIds.length !== uniqueActionIds.size) {
-      throw new Error('Action.id values must be unique within Actions.actions array');
+      throw new Error(
+        "Action.id values must be unique within Actions.actions array"
+      );
     }
 
     if (content.expiresAt && !this.isValidISO8601(content.expiresAt)) {
-      throw new Error('Actions.expiresAt must be a valid ISO-8601 timestamp');
+      throw new Error("Actions.expiresAt must be a valid ISO-8601 timestamp");
     }
   }
 

@@ -78,6 +78,17 @@ export class USDCHandler {
   }
 
   /**
+   * Get ETH balance for a given address
+   */
+  async getETHBalance(address: string): Promise<string> {
+    const balance = await this.publicClient.getBalance({
+      address: address as `0x${string}`,
+    });
+
+    return formatUnits(balance, 18); // ETH has 18 decimals
+  }
+
+  /**
    * Create wallet send calls parameters for USDC transfer
    */
   createUSDCTransferCalls(
