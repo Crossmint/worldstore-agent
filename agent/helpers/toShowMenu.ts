@@ -65,17 +65,10 @@ export const getMenuType = (
     })();
 
   // Show main menu for first interaction or long time since last message
-  if (isFirstInteraction || isLongTimeSinceLastMessage) {
+  // @dev only for testing - send "hey!!" to show menu
+  if (isFirstInteraction || isLongTimeSinceLastMessage || trimmedMessage === "hey!!") {
     return "main";
   }
 
   return null;
-};
-
-// Backward compatibility function
-export const toShowMenu = (
-  messageContent: string,
-  conversationHistory: ConversationMessage[]
-): boolean => {
-  return getMenuType(messageContent, conversationHistory) !== null;
 };
