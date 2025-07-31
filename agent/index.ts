@@ -189,6 +189,9 @@ class XMTPShoppingBot {
               ),
             currentFundingRequirement:
               this.userStateManager.getAllFundingRequirements(),
+            clearFundingRequirement: (userInboxId: string) => {
+              this.userStateManager.clearFundingRequirement(userInboxId);
+            },
             sendActualFundingRequest: this.sendActualFundingRequest.bind(this),
             loadUserProfile,
             processMessageWithAgent: this.processMessageWithAgent.bind(this),

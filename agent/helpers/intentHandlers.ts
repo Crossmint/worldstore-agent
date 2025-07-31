@@ -4,13 +4,13 @@ import { AGENT_EMOJIS, FundingData, UserProfile } from "../lib/types";
 
 type UserContextType = "shopping" | "general" | "profile" | "wallet" | "menu";
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
 export interface IntentHandlerContext {
   conversation: Conversation;
   userInboxId: string;
   setUserContext: (id: string, context: UserContextType) => void;
   handleBalanceCheck: (conversation: Conversation, id: string) => Promise<void>;
   currentFundingRequirement: Record<string, FundingData | undefined>;
+  clearFundingRequirement: (userInboxId: string) => void;
   sendActualFundingRequest: (params: {
     sender: string;
     receiver: string;
@@ -33,7 +33,6 @@ export interface IntentHandlerContext {
     };
   };
 }
-/* eslint-enable @typescript-eslint/no-unused-vars */
 
 // Message templates for assistant activation
 const ASSISTANT_MESSAGES = {
@@ -191,7 +190,7 @@ export class IntentHandler {
       }
 
       case "cancel-order":
-        this.context.currentFundingRequirement[userInboxId] = undefined;
+        this.context.clearFundingRequirement(userInboxId);
         await conversation.send(
           "❌ Order cancelled. Let me know if you'd like to try something else!"
         );

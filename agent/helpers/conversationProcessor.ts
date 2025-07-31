@@ -7,7 +7,6 @@ import { ActionMenuFactory } from "./actionMenuFactory";
 import { WAITING_MESSAGE } from "./constants";
 import {
   createShoppingAgent,
-  createGeneralAgent,
   createProfileAgent,
   createWalletAgent,
 } from "../lib/agents";
@@ -63,7 +62,6 @@ export class ConversationProcessor {
     const finalState = await agent.invoke(initialState);
 
     console.log({ initialState, finalState });
-    console.log({ messages: finalState.messages });
 
     // Send the agent's response
     await this.sendAgentResponse(conversation, finalState);
@@ -84,11 +82,10 @@ export class ConversationProcessor {
     const agentEmoji =
       {
         shopping: AGENT_EMOJIS.SHOPPING,
-        general: AGENT_EMOJIS.GENERAL,
         profile: AGENT_EMOJIS.PROFILE,
         wallet: AGENT_EMOJIS.WALLET,
-        menu: AGENT_EMOJIS.GENERAL,
-      }[agentToUse] || AGENT_EMOJIS.GENERAL;
+        menu: AGENT_EMOJIS.SHOPPING,
+      }[agentToUse] || AGENT_EMOJIS.SHOPPING;
 
     await conversation.send(`${agentEmoji} is ${WAITING_MESSAGE}`);
     await conversation.sync();
@@ -99,16 +96,15 @@ export class ConversationProcessor {
 
     switch (context) {
       case "shopping":
-        return createShoppingAgent(config);
       case "general":
       case "menu":
-        return createGeneralAgent(config.llm);
+        return createShoppingAgent(config);
       case "profile":
         return createProfileAgent(config.llm);
       case "wallet":
         return createWalletAgent(config.llm);
       default:
-        return createGeneralAgent(config.llm);
+        return createShoppingAgent(config);
     }
   }
 

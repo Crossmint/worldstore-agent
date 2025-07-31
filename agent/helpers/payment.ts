@@ -53,7 +53,6 @@ export async function processPayment({
   userProfile: UserProfile;
 }): Promise<PaymentResult> {
   try {
-    console.log({ userProfile });
     // Extract ASIN from productLocator (format: "amazon:ASIN")
     const asin = orderData.productLocator.split(":")[1];
 
@@ -134,8 +133,6 @@ export async function processPayment({
       );
       const requiredAmount =
         parseInt(paymentRequirements.maxAmountRequired) / Math.pow(10, 6);
-
-      console.log({ currentBalance, requiredAmount });
 
       if (currentBalance < requiredAmount) {
         const shortfall = Math.floor(
