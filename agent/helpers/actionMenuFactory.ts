@@ -16,11 +16,11 @@ export class ActionMenuFactory {
       id: `main-menu-${Date.now()}`,
       description: `Welcome to Worldstore 🌟\n\nYour AI-powered platform for Amazon shopping and Web3 services`,
       actions: [
-        {
-          id: "general-assistant",
-          label: `${AGENT_EMOJIS.GENERAL} General Assistant`,
-          style: "primary",
-        },
+        // {
+        //   id: "general-assistant",
+        //   label: `${AGENT_EMOJIS.GENERAL} General Assistant`,
+        //   style: "primary",
+        // },
         {
           id: "shopping-assistant",
           label: `${AGENT_EMOJIS.SHOPPING} Shopping Assistant`,
@@ -63,11 +63,11 @@ export class ActionMenuFactory {
       id: `agents-menu-${Date.now()}`,
       description: `🤖 AI Assistants\n\nChoose your assistant to help with specific tasks:`,
       actions: [
-        {
-          id: "general-assistant",
-          label: `${AGENT_EMOJIS.GENERAL} General Assistant`,
-          style: "primary",
-        },
+        // {
+        //   id: "general-assistant",
+        //   label: `${AGENT_EMOJIS.GENERAL} General Assistant`,
+        //   style: "primary",
+        // },
         {
           id: "shopping-assistant",
           label: `${AGENT_EMOJIS.SHOPPING} Shopping Assistant`,
