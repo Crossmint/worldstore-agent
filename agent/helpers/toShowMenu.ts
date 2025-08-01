@@ -1,6 +1,6 @@
 import { WAITING_MESSAGE } from "./constants";
 
-export type MenuType = "main" | "help" | "agents" | null;
+export type MenuType = "main" | "help" | "agents" | "clear" | null;
 
 interface ConversationMessage {
   content: unknown;
@@ -28,6 +28,10 @@ export const getMenuType = (
 
   if (trimmedMessage === "/menu") {
     return "main";
+  }
+
+  if (trimmedMessage === "/clear") {
+    return "clear";
   }
 
   const meaningfulMessages = conversationHistory

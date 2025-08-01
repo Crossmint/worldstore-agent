@@ -6,6 +6,7 @@ export class UserStateManager {
   private fundingRequirements = new Map<string, FundingData>();
   private profileMenuFlags = new Map<string, boolean>();
   private userContexts = new Map<string, UserContextType>();
+  private contextClearTimestamps = new Map<string, Date>();
 
   // Funding requirement management
   setFundingRequirement(userInboxId: string, fundingData: FundingData): void {
@@ -63,6 +64,16 @@ export class UserStateManager {
     this.clearFundingRequirement(userInboxId);
     this.clearProfileMenuFlag(userInboxId);
     this.clearUserContext(userInboxId);
+    this.contextClearTimestamps.set(userInboxId, new Date());
+  }
+
+  // Context clear timestamp management
+  getContextClearTimestamp(userInboxId: string): Date | undefined {
+    return this.contextClearTimestamps.get(userInboxId);
+  }
+
+  clearContextClearTimestamp(userInboxId: string): void {
+    this.contextClearTimestamps.delete(userInboxId);
   }
 
   // For debugging/monitoring

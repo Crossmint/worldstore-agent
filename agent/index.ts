@@ -115,7 +115,7 @@ class XMTPShoppingBot {
 
         // Send automatic reaction to the received message
         try {
-          const reactions = ["🤔", "👀", "🫡", "👍", "💫", "⚡"];
+          const reactions = ["🤔", "👀", "🫡", "💫", "⚡"];
           const randomReaction =
             reactions[Math.floor(Math.random() * reactions.length)];
 
@@ -173,6 +173,15 @@ class XMTPShoppingBot {
               await this.actionMenuFactory.sendAgentsMenu(
                 conversation,
                 userInboxId
+              );
+              break;
+
+            case "clear":
+              // Clear user state and conversation context
+              this.userStateManager.clearAllUserState(userInboxId);
+              await delayedSend(
+                conversation,
+                "🗑️ Context cleared! Starting fresh conversation."
               );
               break;
 

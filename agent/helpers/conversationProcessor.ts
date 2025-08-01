@@ -127,6 +127,10 @@ export class ConversationProcessor {
 
     const agentInboxId = this.xmtpClient.inboxId;
 
+    // Get the user's inbox ID to check for context clear timestamp
+    const userInboxId = conversationHistory.find(msg => msg.senderInboxId !== agentInboxId)?.senderInboxId;
+    const clearTimestamp = userInboxId ? this.userStateManager.getContextClearTimestamp(userInboxId) : undefined;
+
     return conversationHistory
       .filter(
         (msg) =>
@@ -136,6 +140,24 @@ export class ConversationProcessor {
           )
       )
       .filter((msg) => msg.contentType?.typeId === "text")
+      .filter((msg) => {
+        // If context was cleared, only include messages after clear timestamp
+        if (clearTimestamp) {
+          // Try common timestamp property names used in XMTP messages (same as toShowMenu.ts)
+          const msgWithTimestamp = msg as unknown as {
+            sentAt?: string | Date;
+            sent?: string | Date;
+            timestamp?: string | Date;
+            createdAt?: string | Date;
+          };
+          const messageTime = msgWithTimestamp.sentAt || msgWithTimestamp.sent || msgWithTimestamp.timestamp || msgWithTimestamp.createdAt;
+          if (messageTime) {
+            const msgDate = new Date(messageTime);
+            return msgDate > clearTimestamp;
+          }
+        }
+        return true;
+      })
       .map((msg) => {
         const content = String(msg.content);
         let cleanContent = content;
