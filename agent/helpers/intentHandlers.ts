@@ -260,9 +260,7 @@ What would you like to do with your profile?`;
     setUserContext(userInboxId, "menu");
 
     try {
-      const userProfile = await this.context.loadUserProfile(userInboxId);
-      const walletDisplay = await this.formatWalletDisplay(userProfile);
-      const fullMessage = `${ASSISTANT_MESSAGES.wallet}${walletDisplay}`;
+      const fullMessage = `${ASSISTANT_MESSAGES.wallet}`;
 
       await conversation.send(fullMessage);
 
@@ -379,76 +377,6 @@ What would you like to do with your profile?`;
 • Wallet Address: ${userProfile.walletAddress || "Not created"}
 
 ${!userProfile.isComplete ? "🚨 Your profile is incomplete. I can help you add missing information." : "🎉 Your profile is complete - you're ready to shop!"}`;
-  }
-
-  private async formatWalletDisplay(userProfile: UserProfile | null): Promise<string> {
-    if (!userProfile) {
-      return `
-💰 Wallet Status: No Profile Found
-
-🆕 You need to create a profile first to set up your wallet. Please use the Profile Management assistant to get started.`;
-    }
-
-    if (!userProfile.walletAddress || !userProfile.hostWalletAddress) {
-      return `
-💰 Wallet Status: Setup Required
-
-⚠️ Your wallet addresses are not configured yet. Please complete your profile setup first to enable wallet functionality.`;
-    }
-
-    try {
-      return await this.getWalletBalancesDisplay(userProfile);
-    } catch {
-      return this.getWalletInfoFallback(userProfile);
-    }
-  }
-
-  private async getWalletBalancesDisplay(userProfile: UserProfile): Promise<string> {
-    // Import USDCHandler here to avoid circular imports
-    const { USDCHandler } = await import("../helpers/usdc");
-    const usdcHandler = new USDCHandler("base-sepolia");
-
-    // Get balances for both wallets in parallel
-    const [
-      [userUSDCBalance, userETHBalance],
-      [hostUSDCBalance, hostETHBalance]
-    ] = await Promise.all([
-      Promise.all([
-        usdcHandler.getUSDCBalance(userProfile.walletAddress!),
-        usdcHandler.getETHBalance(userProfile.walletAddress!)
-      ]),
-      Promise.all([
-        usdcHandler.getUSDCBalance(userProfile.hostWalletAddress),
-        usdcHandler.getETHBalance(userProfile.hostWalletAddress)
-      ])
-    ]);
-
-    const formatAddress = (addr: string) => `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}`;
-
-    return `
-💰 Your Wallet Balances on Base Sepolia:
-
-🔹 Your Wallet (${formatAddress(userProfile.walletAddress!)}):
-• ETH: ${parseFloat(userETHBalance).toFixed(6)} ETH
-• USDC: ${parseFloat(userUSDCBalance).toFixed(6)} USDC
-
-🔸 Host Wallet (${formatAddress(userProfile.hostWalletAddress)}):
-• ETH: ${parseFloat(hostETHBalance).toFixed(6)} ETH
-• USDC: ${parseFloat(hostUSDCBalance).toFixed(6)} USDC
-
-${parseFloat(userUSDCBalance) > 0 ? "✅ You have USDC available for shopping!" : "⚠️ Your wallet needs USDC to make purchases. Consider adding funds."}`;
-  }
-
-  private getWalletInfoFallback(userProfile: UserProfile): string {
-    const formatAddress = (addr: string) => `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}`;
-
-    return `
-💰 Wallet Information:
-
-🔹 Your Wallet: ${userProfile.walletAddress ? formatAddress(userProfile.walletAddress) : "Not set"}
-🔸 Host Wallet: ${userProfile.hostWalletAddress ? formatAddress(userProfile.hostWalletAddress) : "Not set"}
-
-⚠️ Unable to fetch current balances. Please try again or contact support if the issue persists.`;
   }
 
   async handleProfileManagement(actionId: string): Promise<boolean> {

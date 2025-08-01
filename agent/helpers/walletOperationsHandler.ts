@@ -60,64 +60,111 @@ export class WalletOperationsHandler {
         return;
       }
 
-      await conversation.send("🔍 Checking your balances...");
+      await conversation.send("🔍 Checking balances for both your wallet and host wallet...");
 
-      // Get both USDC and ETH balances
-      const [usdcBalance, ethBalance] = await Promise.allSettled([
+      // Get balances for both user wallet and host wallet
+      const [userUsdcBalance, userEthBalance, hostUsdcBalance, hostEthBalance] = await Promise.allSettled([
         this.usdcHandler.getUSDCBalance(userProfile.walletAddress),
-        this.usdcHandler.getETHBalance(userProfile.walletAddress)
+        this.usdcHandler.getETHBalance(userProfile.walletAddress),
+        this.usdcHandler.getUSDCBalance(userProfile.hostWalletAddress),
+        this.usdcHandler.getETHBalance(userProfile.hostWalletAddress)
       ]);
 
-      const walletPreview = `${userProfile.walletAddress.substring(0, 6)}...${userProfile.walletAddress.slice(-4)}`;
-
-      let balanceMessage = `💰 **Balance Report for ${walletPreview}**\n\n`;
-
-      // Handle USDC balance result
-      if (usdcBalance.status === 'fulfilled') {
-        const usdcAmount = parseFloat(usdcBalance.value);
-        balanceMessage += `💵 **USDC**: ${usdcAmount.toFixed(2)} USDC\n`;
-
-        // Add context about balance
+      const userWalletPreview = `${userProfile.walletAddress.substring(0, 6)}...${userProfile.walletAddress.slice(-4)}`;
+      const hostWalletPreview = `${userProfile.hostWalletAddress.substring(0, 6)}...${userProfile.hostWalletAddress.slice(-4)}`;
+      
+      let balanceMessage = `💰 Balance Report\n\n`;
+      
+      // User Wallet Section
+      balanceMessage += `YOUR WALLET (${userWalletPreview}):\n`;
+      
+      // User USDC balance
+      if (userUsdcBalance.status === 'fulfilled') {
+        const usdcAmount = parseFloat(userUsdcBalance.value);
+        balanceMessage += `💵 USDC: ${usdcAmount.toFixed(2)} USDC`;
+        
         if (usdcAmount === 0) {
-          balanceMessage += `   ⚠️ No USDC balance found\n`;
+          balanceMessage += ` (No balance)\n`;
         } else if (usdcAmount < 1) {
-          balanceMessage += `   ⚠️ Low USDC balance\n`;
+          balanceMessage += ` (Low balance)\n`;
         } else {
-          balanceMessage += `   ✅ Good USDC balance\n`;
+          balanceMessage += ` (Good balance)\n`;
         }
       } else {
-        balanceMessage += `💵 **USDC**: ❌ Error fetching balance\n`;
-        logger.error("USDC balance fetch error", { error: usdcBalance.reason, userInboxId });
+        balanceMessage += `💵 USDC: Error fetching balance\n`;
+        logger.error("User USDC balance fetch error", { error: userUsdcBalance.reason, userInboxId });
       }
 
-      // Handle ETH balance result
-      if (ethBalance.status === 'fulfilled') {
-        const ethAmount = parseFloat(ethBalance.value);
-        balanceMessage += `⛽ **ETH**: ${ethAmount.toFixed(4)} ETH\n`;
-
-        // Add context about gas fees
+      // User ETH balance
+      if (userEthBalance.status === 'fulfilled') {
+        const ethAmount = parseFloat(userEthBalance.value);
+        balanceMessage += `⛽ ETH: ${ethAmount.toFixed(4)} ETH`;
+        
         if (ethAmount === 0) {
-          balanceMessage += `   ⚠️ No ETH for gas fees\n`;
+          balanceMessage += ` (No gas fees available)\n`;
         } else if (ethAmount < 0.001) {
-          balanceMessage += `   ⚠️ Low ETH - may not cover gas fees\n`;
+          balanceMessage += ` (Low - may not cover gas)\n`;
         } else {
-          balanceMessage += `   ✅ Sufficient ETH for transactions\n`;
+          balanceMessage += ` (Sufficient for transactions)\n`;
         }
       } else {
-        balanceMessage += `⛽ **ETH**: ❌ Error fetching balance\n`;
-        logger.error("ETH balance fetch error", { error: ethBalance.reason, userInboxId });
+        balanceMessage += `⛽ ETH: Error fetching balance\n`;
+        logger.error("User ETH balance fetch error", { error: userEthBalance.reason, userInboxId });
       }
 
-      balanceMessage += `\n🌐 **Network**: Base Sepolia\n`;
-      balanceMessage += `📍 **Wallet**: [${userProfile.walletAddress}](https://sepolia.basescan.org/address/${userProfile.walletAddress})`;
+      balanceMessage += `\n`;
+
+      // Host Wallet Section
+      balanceMessage += `HOST WALLET (${hostWalletPreview}):\n`;
+      
+      // Host USDC balance
+      if (hostUsdcBalance.status === 'fulfilled') {
+        const usdcAmount = parseFloat(hostUsdcBalance.value);
+        balanceMessage += `💵 USDC: ${usdcAmount.toFixed(2)} USDC`;
+        
+        if (usdcAmount === 0) {
+          balanceMessage += ` (No balance)\n`;
+        } else if (usdcAmount < 1) {
+          balanceMessage += ` (Low balance)\n`;
+        } else {
+          balanceMessage += ` (Good balance)\n`;
+        }
+      } else {
+        balanceMessage += `💵 USDC: Error fetching balance\n`;
+        logger.error("Host USDC balance fetch error", { error: hostUsdcBalance.reason, userInboxId });
+      }
+
+      // Host ETH balance
+      if (hostEthBalance.status === 'fulfilled') {
+        const ethAmount = parseFloat(hostEthBalance.value);
+        balanceMessage += `⛽ ETH: ${ethAmount.toFixed(4)} ETH`;
+        
+        if (ethAmount === 0) {
+          balanceMessage += ` (No gas fees available)\n`;
+        } else if (ethAmount < 0.001) {
+          balanceMessage += ` (Low - may not cover gas)\n`;
+        } else {
+          balanceMessage += ` (Sufficient for transactions)\n`;
+        }
+      } else {
+        balanceMessage += `⛽ ETH: Error fetching balance\n`;
+        logger.error("Host ETH balance fetch error", { error: hostEthBalance.reason, userInboxId });
+      }
+
+      balanceMessage += `\n🌐 Network: Base Sepolia`;
+      balanceMessage += `\n📍 User Wallet: ${userProfile.walletAddress}`;
+      balanceMessage += `\n📍 Host Wallet: ${userProfile.hostWalletAddress}`;
 
       await conversation.send(balanceMessage);
 
       logger.info("Balance check completed", {
         userInboxId,
-        walletAddress: userProfile.walletAddress,
-        usdcSuccess: usdcBalance.status === 'fulfilled',
-        ethSuccess: ethBalance.status === 'fulfilled'
+        userWalletAddress: userProfile.walletAddress,
+        hostWalletAddress: userProfile.hostWalletAddress,
+        userUsdcSuccess: userUsdcBalance.status === 'fulfilled',
+        userEthSuccess: userEthBalance.status === 'fulfilled',
+        hostUsdcSuccess: hostUsdcBalance.status === 'fulfilled',
+        hostEthSuccess: hostEthBalance.status === 'fulfilled'
       });
 
     } catch (error) {
