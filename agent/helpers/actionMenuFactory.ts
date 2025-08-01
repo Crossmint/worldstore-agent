@@ -28,17 +28,17 @@ export class ActionMenuFactory {
         },
         {
           id: "profile-management",
-          label: `${AGENT_EMOJIS.PROFILE} Manage Profile`,
+          label: `${AGENT_EMOJIS.PROFILE} Profile Assistant`,
           style: "secondary",
         },
         {
           id: "wallet-management",
-          label: `${AGENT_EMOJIS.WALLET} Manage Wallet`,
+          label: `${AGENT_EMOJIS.WALLET} Wallet Operations`,
           style: "secondary",
         },
         {
           id: "how-it-works",
-          label: "❓ How it works",
+          label: "❓ How does it work",
           style: "secondary",
         },
         {
@@ -63,11 +63,6 @@ export class ActionMenuFactory {
       id: `agents-menu-${Date.now()}`,
       description: `🤖 AI Assistants\n\nChoose your assistant to help with specific tasks:`,
       actions: [
-        // {
-        //   id: "general-assistant",
-        //   label: `${AGENT_EMOJIS.GENERAL} General Assistant`,
-        //   style: "primary",
-        // },
         {
           id: "shopping-assistant",
           label: `${AGENT_EMOJIS.SHOPPING} Shopping Assistant`,
@@ -75,12 +70,7 @@ export class ActionMenuFactory {
         },
         {
           id: "profile-management",
-          label: `${AGENT_EMOJIS.PROFILE} Manage Profile`,
-          style: "secondary",
-        },
-        {
-          id: "wallet-management",
-          label: `${AGENT_EMOJIS.WALLET} Manage Wallet`,
+          label: `${AGENT_EMOJIS.PROFILE} Profile Assistant`,
           style: "secondary",
         },
       ],
@@ -218,7 +208,7 @@ export class ActionMenuFactory {
       description: "🛒 Quick Buy\n\nTap any product to purchase instantly:",
       actions: products.map((product) => ({
         id: `buy:${product.asin}`,
-        label: `🛍️ ${product.title.substring(0, 40)}`, // Truncate to fit button
+        label: `🛍️ ${product.title.substring(0, 30)}`, // Truncate to fit button
         style: "primary" as const,
       })),
     };
@@ -231,5 +221,32 @@ export class ActionMenuFactory {
       productCount: products.length,
       asins: products.map(p => p.asin)
     });
+  }
+
+  async sendWalletActionMenu(
+    conversation: Conversation,
+    userInboxId: string
+  ): Promise<void> {
+    const walletActions: ActionsContent = {
+      id: `wallet-menu-${Date.now()}`,
+      description: `${AGENT_EMOJIS.WALLET} Wallet Management\n\nChoose what you'd like to do with your wallet:`,
+      actions: [
+        {
+          id: "check-balance",
+          label: "💰 Check Balance",
+          style: "primary",
+        },
+        {
+          id: "top-up-5",
+          label: "💸 Top up with $5",
+          style: "secondary",
+        },
+      ],
+    };
+
+    await conversation.send(walletActions, ContentTypeActions);
+    await conversation.sync();
+
+    logger.info("Wallet action menu sent", { userInboxId });
   }
 }

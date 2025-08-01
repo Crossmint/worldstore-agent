@@ -22,8 +22,12 @@ export const getMenuType = (
     return "help";
   }
 
-  if (trimmedMessage === "/menu" || trimmedMessage === "/agents") {
+  if (trimmedMessage === "/agents" || trimmedMessage === "/agent") {
     return "agents";
+  }
+
+  if (trimmedMessage === "/menu") {
+    return "main";
   }
 
   const meaningfulMessages = conversationHistory

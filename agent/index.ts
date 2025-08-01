@@ -7,7 +7,7 @@ import { FundingData, UserProfile } from "./lib/types";
 import { loadUserProfile } from "@helpers/loadUserProfile";
 import { saveUserProfile } from "services/redis";
 import { getMenuType } from "@helpers/toShowMenu";
-import { UserStateManager } from "@helpers/userStateManager";
+
 import { ActionMenuFactory } from "@helpers/actionMenuFactory";
 import { ConversationProcessor } from "@helpers/conversationProcessor";
 import { OrderToolWrapper } from "@helpers/orderToolWrapper";
@@ -17,6 +17,7 @@ import {
   IntentHandler,
   type IntentHandlerContext,
 } from "@helpers/intentHandlers";
+import { UserStateManager, UserContextType } from "@helpers/userStateManager";
 
 const { ANTHROPIC_API_KEY } = validateEnvironment(["ANTHROPIC_API_KEY"]);
 
@@ -177,10 +178,7 @@ class XMTPShoppingBot {
           const handlerContext: IntentHandlerContext = {
             conversation,
             userInboxId,
-            setUserContext: (
-              id: string,
-              context: "shopping" | "general" | "profile" | "wallet" | "menu"
-            ) => {
+            setUserContext: (id: string, context: UserContextType) => {
               this.userStateManager.setUserContext(id, context);
             },
             handleBalanceCheck:
@@ -196,6 +194,7 @@ class XMTPShoppingBot {
             loadUserProfile,
             processMessageWithAgent: this.processMessageWithAgent.bind(this),
             saveUserProfile,
+            actionMenuFactory: this.actionMenuFactory,
             xmtpClient: this.xmtpClient,
           };
 

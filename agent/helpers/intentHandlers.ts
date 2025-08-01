@@ -25,6 +25,9 @@ export interface IntentHandlerContext {
     userProfile: UserProfile
   ) => Promise<void>;
   saveUserProfile: (profile: UserProfile) => Promise<void>;
+  actionMenuFactory: {
+    sendWalletActionMenu: (conversation: Conversation, userInboxId: string) => Promise<void>;
+  };
   xmtpClient: {
     preferences: {
       inboxStateFromInboxIds: (
@@ -200,6 +203,10 @@ export class IntentHandler {
         await this.context.handleBalanceCheck(conversation, userInboxId);
         return true;
 
+      case "top-up-5":
+        await this.handleTopUp(conversation, userInboxId);
+        return true;
+
       default:
         return false;
     }
@@ -249,20 +256,30 @@ What would you like to do with your profile?`;
     userInboxId: string,
     setUserContext: (id: string, context: UserContextType) => void
   ): Promise<boolean> {
-    setUserContext(userInboxId, "wallet");
+    // Set context to menu since we're showing a menu, not activating an agent
+    setUserContext(userInboxId, "menu");
 
     try {
       const userProfile = await this.context.loadUserProfile(userInboxId);
       const walletDisplay = await this.formatWalletDisplay(userProfile);
-      const fullMessage = `${ASSISTANT_MESSAGES.wallet}${walletDisplay}
-
-What would you like to do with your wallet?`;
+      const fullMessage = `${ASSISTANT_MESSAGES.wallet}${walletDisplay}`;
 
       await conversation.send(fullMessage);
+
+      // Send the wallet action menu
+      await this.context.actionMenuFactory.sendWalletActionMenu(
+        conversation,
+        userInboxId
+      );
+
       return true;
     } catch {
-      // Fallback to basic message if wallet loading fails
+      // Fallback to basic message and menu if wallet loading fails
       await conversation.send(ASSISTANT_MESSAGES.wallet);
+      await this.context.actionMenuFactory.sendWalletActionMenu(
+        conversation,
+        userInboxId
+      );
       return true;
     }
   }
@@ -295,6 +312,43 @@ What would you like to do with your wallet?`;
     }
 
     return false;
+  }
+
+  private async handleTopUp(
+    conversation: Conversation,
+    userInboxId: string
+  ): Promise<void> {
+    try {
+      const userProfile = await this.context.loadUserProfile(userInboxId);
+      if (!userProfile?.walletAddress) {
+        await conversation.send(
+          "❌ No wallet address found. Please complete your profile first."
+        );
+        return;
+      }
+
+      await conversation.send("💸 Initiating top-up with $5 USDC...");
+
+      // Create funding data for $5 top-up
+      const fundingData = {
+        shortfall: "5000000", // 5 USDC in smallest unit (6 decimals)
+        current: "0.0", // We don't know current balance in this context
+        required: "5.0",
+        asin: "TOP-UP", // Special identifier for top-up
+        hostWalletAddress: userProfile.hostWalletAddress,
+        hostWalletBalance: "0.0", // Will be checked during actual transfer
+      };
+
+      await this.context.sendActualFundingRequest({
+        sender: userProfile.hostWalletAddress,
+        receiver: userProfile.walletAddress,
+        fundingData,
+        conversation,
+      });
+    } catch (error) {
+      await conversation.send("❌ Error processing top-up. Please try again.");
+      console.error("Top-up error:", error);
+    }
   }
 
   private formatProfileDisplay(userProfile: UserProfile | null): string {

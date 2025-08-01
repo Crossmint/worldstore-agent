@@ -4,7 +4,6 @@ export type UserContextType =
   | "shopping"
   | "general"
   | "profile"
-  | "wallet"
   | "menu";
 
 export class UserStateManager {

@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import { Conversation, DecodedMessage } from "@xmtp/node-sdk";
+import { Conversation, DecodedMessage, type Client } from "@xmtp/node-sdk";
 import { ChatAnthropic } from "@langchain/anthropic";
 import { AgentState, AGENT_EMOJIS, UserProfile } from "../lib/types";
 import { UserStateManager, UserContextType } from "./userStateManager";
@@ -8,7 +8,6 @@ import { WAITING_MESSAGE } from "./constants";
 import {
   createShoppingAgent,
   createProfileAgent,
-  createWalletAgent,
 } from "../lib/agents";
 import { OrderToolWrapper } from "./orderToolWrapper";
 
@@ -24,7 +23,7 @@ export class ConversationProcessor {
     private userStateManager: UserStateManager,
     private actionMenuFactory: ActionMenuFactory,
     private orderToolWrapper: OrderToolWrapper,
-    private xmtpClient: any
+    private xmtpClient: Client | null
   ) {}
 
   async processMessageWithAgent(
@@ -83,7 +82,6 @@ export class ConversationProcessor {
       {
         shopping: AGENT_EMOJIS.SHOPPING,
         profile: AGENT_EMOJIS.PROFILE,
-        wallet: AGENT_EMOJIS.WALLET,
         menu: AGENT_EMOJIS.SHOPPING,
       }[agentToUse] || AGENT_EMOJIS.SHOPPING;
 
@@ -101,8 +99,6 @@ export class ConversationProcessor {
         return createShoppingAgent(config);
       case "profile":
         return createProfileAgent(config.llm);
-      case "wallet":
-        return createWalletAgent(config.llm);
       default:
         return createShoppingAgent(config);
     }

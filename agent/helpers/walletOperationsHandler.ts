@@ -60,40 +60,69 @@ export class WalletOperationsHandler {
         return;
       }
 
-      await conversation.send("🔍 Checking your USDC balance...");
+      await conversation.send("🔍 Checking your balances...");
 
-      // For now, send a message that balance checking would be implemented
-      // TODO: Implement actual balance checking with USDCHandler
-      await conversation.send(
-        `💰 Balance check initiated for wallet: ${userProfile.walletAddress.substring(0, 6)}...${userProfile.walletAddress.substring(-4)}\n\nNote: Full balance integration pending - this would show your current USDC balance on Base Sepolia.`
-      );
+      // Get both USDC and ETH balances
+      const [usdcBalance, ethBalance] = await Promise.allSettled([
+        this.usdcHandler.getUSDCBalance(userProfile.walletAddress),
+        this.usdcHandler.getETHBalance(userProfile.walletAddress)
+      ]);
+
+      const walletPreview = `${userProfile.walletAddress.substring(0, 6)}...${userProfile.walletAddress.slice(-4)}`;
+
+      let balanceMessage = `💰 **Balance Report for ${walletPreview}**\n\n`;
+
+      // Handle USDC balance result
+      if (usdcBalance.status === 'fulfilled') {
+        const usdcAmount = parseFloat(usdcBalance.value);
+        balanceMessage += `💵 **USDC**: ${usdcAmount.toFixed(2)} USDC\n`;
+
+        // Add context about balance
+        if (usdcAmount === 0) {
+          balanceMessage += `   ⚠️ No USDC balance found\n`;
+        } else if (usdcAmount < 1) {
+          balanceMessage += `   ⚠️ Low USDC balance\n`;
+        } else {
+          balanceMessage += `   ✅ Good USDC balance\n`;
+        }
+      } else {
+        balanceMessage += `💵 **USDC**: ❌ Error fetching balance\n`;
+        logger.error("USDC balance fetch error", { error: usdcBalance.reason, userInboxId });
+      }
+
+      // Handle ETH balance result
+      if (ethBalance.status === 'fulfilled') {
+        const ethAmount = parseFloat(ethBalance.value);
+        balanceMessage += `⛽ **ETH**: ${ethAmount.toFixed(4)} ETH\n`;
+
+        // Add context about gas fees
+        if (ethAmount === 0) {
+          balanceMessage += `   ⚠️ No ETH for gas fees\n`;
+        } else if (ethAmount < 0.001) {
+          balanceMessage += `   ⚠️ Low ETH - may not cover gas fees\n`;
+        } else {
+          balanceMessage += `   ✅ Sufficient ETH for transactions\n`;
+        }
+      } else {
+        balanceMessage += `⛽ **ETH**: ❌ Error fetching balance\n`;
+        logger.error("ETH balance fetch error", { error: ethBalance.reason, userInboxId });
+      }
+
+      balanceMessage += `\n🌐 **Network**: Base Sepolia\n`;
+      balanceMessage += `📍 **Wallet**: [${userProfile.walletAddress}](https://sepolia.basescan.org/address/${userProfile.walletAddress})`;
+
+      await conversation.send(balanceMessage);
+
+      logger.info("Balance check completed", {
+        userInboxId,
+        walletAddress: userProfile.walletAddress,
+        usdcSuccess: usdcBalance.status === 'fulfilled',
+        ethSuccess: ethBalance.status === 'fulfilled'
+      });
+
     } catch (error) {
       logger.error("Error checking balance", { error, userInboxId });
       await conversation.send("❌ Error checking balance. Please try again.");
-    }
-  }
-
-  async getWalletBalance(walletAddress: string): Promise<string | null> {
-    try {
-      // TODO: Implement actual balance checking
-      // const balance = await this.usdcHandler.getBalance(walletAddress);
-      // return balance;
-
-      // Placeholder implementation
-      logger.info("Balance check requested for", { walletAddress });
-      return null;
-    } catch (error) {
-      logger.error("Error getting wallet balance", { error, walletAddress });
-      return null;
-    }
-  }
-
-  validateWalletAddress(address: string): boolean {
-    try {
-      // Basic validation - could be enhanced
-      return /^0x[a-fA-F0-9]{40}$/.test(address);
-    } catch {
-      return false;
     }
   }
 }
