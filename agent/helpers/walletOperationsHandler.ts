@@ -1,7 +1,7 @@
 import { Conversation } from "@xmtp/node-sdk";
 import { ContentTypeWalletSendCalls } from "@xmtp/content-type-wallet-send-calls";
 import { USDCHandler } from "./usdc";
-import { FundingData, UserProfile } from "../lib/types";
+import { FundingData } from "../lib/types";
 import { loadUserProfile } from "./loadUserProfile";
 import { logger } from "./logger";
 

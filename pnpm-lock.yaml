@@ -44,6 +44,9 @@ importers:
       '@xmtp/content-type-primitives':
         specifier: ^2.0.2
         version: 2.0.2
+      '@xmtp/content-type-reaction':
+        specifier: ^2.0.2
+        version: 2.0.2
       '@xmtp/content-type-wallet-send-calls':
         specifier: ^2.0.0
         version: 2.0.0
@@ -1879,6 +1882,9 @@ packages:
 
   '@xmtp/content-type-primitives@2.0.2':
     resolution: {integrity: sha512-OTUsCD48sO2Eg69dfre32OSnXSkmefbSZA4L0S58LqYK6+hMymFRRjEH4fvPzXc9WCw5FmCYEG7DFAaB680HiQ==}
+
+  '@xmtp/content-type-reaction@2.0.2':
+    resolution: {integrity: sha512-v7wGMycSsUi8NyLR+ytjDhNY4Nr4p8qNwKx8LZPlA8IwLacq2Bp2vKxlOAnGX7m5XP9ivpBNNZvkpR5Limvz1g==}
 
   '@xmtp/content-type-text@2.0.2':
     resolution: {integrity: sha512-nlRufOYPrG5sNbruNPCsb6Qk9/jmJ5lMooPsZEo4Dbwda/2S4bSvrrIncT6if7M2SCha3hxtlgJlFGeTtHy4gQ==}
@@ -7831,6 +7837,10 @@ snapshots:
   '@xmtp/content-type-primitives@2.0.2':
     dependencies:
       '@xmtp/proto': 3.86.0
+
+  '@xmtp/content-type-reaction@2.0.2':
+    dependencies:
+      '@xmtp/content-type-primitives': 2.0.2
 
   '@xmtp/content-type-text@2.0.2':
     dependencies:
