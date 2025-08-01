@@ -219,7 +219,7 @@ export class ActionMenuFactory {
     logger.info("Quick buy menu sent", {
       userInboxId,
       productCount: products.length,
-      asins: products.map(p => p.asin)
+      asins: products.map((p) => p.asin),
     });
   }
 

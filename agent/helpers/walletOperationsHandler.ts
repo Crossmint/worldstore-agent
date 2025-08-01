@@ -60,29 +60,32 @@ export class WalletOperationsHandler {
         return;
       }
 
-      await conversation.send("🔍 Checking balances for both your wallet and host wallet...");
+      await conversation.send(
+        "🔍 Checking balances for both your wallet and host wallet..."
+      );
 
       // Get balances for both user wallet and host wallet
-      const [userUsdcBalance, userEthBalance, hostUsdcBalance, hostEthBalance] = await Promise.allSettled([
-        this.usdcHandler.getUSDCBalance(userProfile.walletAddress),
-        this.usdcHandler.getETHBalance(userProfile.walletAddress),
-        this.usdcHandler.getUSDCBalance(userProfile.hostWalletAddress),
-        this.usdcHandler.getETHBalance(userProfile.hostWalletAddress)
-      ]);
+      const [userUsdcBalance, userEthBalance, hostUsdcBalance, hostEthBalance] =
+        await Promise.allSettled([
+          this.usdcHandler.getUSDCBalance(userProfile.walletAddress),
+          this.usdcHandler.getETHBalance(userProfile.walletAddress),
+          this.usdcHandler.getUSDCBalance(userProfile.hostWalletAddress),
+          this.usdcHandler.getETHBalance(userProfile.hostWalletAddress),
+        ]);
 
       const userWalletPreview = `${userProfile.walletAddress.substring(0, 6)}...${userProfile.walletAddress.slice(-4)}`;
       const hostWalletPreview = `${userProfile.hostWalletAddress.substring(0, 6)}...${userProfile.hostWalletAddress.slice(-4)}`;
-      
+
       let balanceMessage = `💰 Balance Report\n\n`;
-      
+
       // User Wallet Section
       balanceMessage += `YOUR WALLET (${userWalletPreview}):\n`;
-      
+
       // User USDC balance
-      if (userUsdcBalance.status === 'fulfilled') {
+      if (userUsdcBalance.status === "fulfilled") {
         const usdcAmount = parseFloat(userUsdcBalance.value);
         balanceMessage += `💵 USDC: ${usdcAmount.toFixed(2)} USDC`;
-        
+
         if (usdcAmount === 0) {
           balanceMessage += ` (No balance)\n`;
         } else if (usdcAmount < 1) {
@@ -92,14 +95,17 @@ export class WalletOperationsHandler {
         }
       } else {
         balanceMessage += `💵 USDC: Error fetching balance\n`;
-        logger.error("User USDC balance fetch error", { error: userUsdcBalance.reason, userInboxId });
+        logger.error("User USDC balance fetch error", {
+          error: userUsdcBalance.reason,
+          userInboxId,
+        });
       }
 
       // User ETH balance
-      if (userEthBalance.status === 'fulfilled') {
+      if (userEthBalance.status === "fulfilled") {
         const ethAmount = parseFloat(userEthBalance.value);
         balanceMessage += `⛽ ETH: ${ethAmount.toFixed(4)} ETH`;
-        
+
         if (ethAmount === 0) {
           balanceMessage += ` (No gas fees available)\n`;
         } else if (ethAmount < 0.001) {
@@ -109,19 +115,22 @@ export class WalletOperationsHandler {
         }
       } else {
         balanceMessage += `⛽ ETH: Error fetching balance\n`;
-        logger.error("User ETH balance fetch error", { error: userEthBalance.reason, userInboxId });
+        logger.error("User ETH balance fetch error", {
+          error: userEthBalance.reason,
+          userInboxId,
+        });
       }
 
       balanceMessage += `\n`;
 
       // Host Wallet Section
       balanceMessage += `HOST WALLET (${hostWalletPreview}):\n`;
-      
+
       // Host USDC balance
-      if (hostUsdcBalance.status === 'fulfilled') {
+      if (hostUsdcBalance.status === "fulfilled") {
         const usdcAmount = parseFloat(hostUsdcBalance.value);
         balanceMessage += `💵 USDC: ${usdcAmount.toFixed(2)} USDC`;
-        
+
         if (usdcAmount === 0) {
           balanceMessage += ` (No balance)\n`;
         } else if (usdcAmount < 1) {
@@ -131,14 +140,17 @@ export class WalletOperationsHandler {
         }
       } else {
         balanceMessage += `💵 USDC: Error fetching balance\n`;
-        logger.error("Host USDC balance fetch error", { error: hostUsdcBalance.reason, userInboxId });
+        logger.error("Host USDC balance fetch error", {
+          error: hostUsdcBalance.reason,
+          userInboxId,
+        });
       }
 
       // Host ETH balance
-      if (hostEthBalance.status === 'fulfilled') {
+      if (hostEthBalance.status === "fulfilled") {
         const ethAmount = parseFloat(hostEthBalance.value);
         balanceMessage += `⛽ ETH: ${ethAmount.toFixed(4)} ETH`;
-        
+
         if (ethAmount === 0) {
           balanceMessage += ` (No gas fees available)\n`;
         } else if (ethAmount < 0.001) {
@@ -148,7 +160,10 @@ export class WalletOperationsHandler {
         }
       } else {
         balanceMessage += `⛽ ETH: Error fetching balance\n`;
-        logger.error("Host ETH balance fetch error", { error: hostEthBalance.reason, userInboxId });
+        logger.error("Host ETH balance fetch error", {
+          error: hostEthBalance.reason,
+          userInboxId,
+        });
       }
 
       balanceMessage += `\n🌐 Network: Base Sepolia`;
@@ -161,12 +176,11 @@ export class WalletOperationsHandler {
         userInboxId,
         userWalletAddress: userProfile.walletAddress,
         hostWalletAddress: userProfile.hostWalletAddress,
-        userUsdcSuccess: userUsdcBalance.status === 'fulfilled',
-        userEthSuccess: userEthBalance.status === 'fulfilled',
-        hostUsdcSuccess: hostUsdcBalance.status === 'fulfilled',
-        hostEthSuccess: hostEthBalance.status === 'fulfilled'
+        userUsdcSuccess: userUsdcBalance.status === "fulfilled",
+        userEthSuccess: userEthBalance.status === "fulfilled",
+        hostUsdcSuccess: hostUsdcBalance.status === "fulfilled",
+        hostEthSuccess: hostEthBalance.status === "fulfilled",
       });
-
     } catch (error) {
       logger.error("Error checking balance", { error, userInboxId });
       await conversation.send("❌ Error checking balance. Please try again.");

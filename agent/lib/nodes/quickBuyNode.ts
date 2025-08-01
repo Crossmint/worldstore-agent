@@ -77,9 +77,14 @@ If no buyable products are found, return:
           return { quickBuy: [] };
         }
 
-        const detectionResult = JSON.parse(jsonMatch[0]) as ProductDetectionResult;
+        const detectionResult = JSON.parse(
+          jsonMatch[0]
+        ) as ProductDetectionResult;
 
-        if (!detectionResult.hasProducts || !Array.isArray(detectionResult.products)) {
+        if (
+          !detectionResult.hasProducts ||
+          !Array.isArray(detectionResult.products)
+        ) {
           logger.agent("No products detected by LLM", {
             userInboxId: state.userInboxId,
             hasProducts: detectionResult.hasProducts,
@@ -87,13 +92,14 @@ If no buyable products are found, return:
           return { quickBuy: [] };
         }
 
-                // Create quick buy products from detected products
+        // Create quick buy products from detected products
         const quickBuyProducts = detectionResult.products
-          .filter((product: DetectedProduct) =>
-            product.asin &&
-            product.title &&
-            typeof product.asin === 'string' &&
-            product.asin.length === 10
+          .filter(
+            (product: DetectedProduct) =>
+              product.asin &&
+              product.title &&
+              typeof product.asin === "string" &&
+              product.asin.length === 10
           )
           .slice(0, 4) // Limit to 4 options
           .map((product: DetectedProduct) => ({
@@ -104,25 +110,26 @@ If no buyable products are found, return:
         logger.agent("Generated quick buy products via LLM", {
           userInboxId: state.userInboxId,
           productCount: quickBuyProducts.length,
-          products: quickBuyProducts.map(product => ({
+          products: quickBuyProducts.map((product) => ({
             asin: product.asin,
-            title: product.title.substring(0, 50)
+            title: product.title.substring(0, 50),
           })),
         });
 
         return {
           quickBuy: quickBuyProducts,
         };
-
       } catch (parseError) {
         logger.error("Failed to parse LLM detection response", {
-          error: parseError instanceof Error ? parseError.message : String(parseError),
+          error:
+            parseError instanceof Error
+              ? parseError.message
+              : String(parseError),
           userInboxId: state.userInboxId,
           responseContent: responseContent.substring(0, 300),
         });
         return { quickBuy: [] };
       }
-
     } catch (error) {
       logger.error("Quick buy generation error", {
         error: error instanceof Error ? error.message : String(error),

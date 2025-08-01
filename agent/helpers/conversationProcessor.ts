@@ -5,10 +5,7 @@ import { AgentState, AGENT_EMOJIS, UserProfile } from "../lib/types";
 import { UserStateManager, UserContextType } from "./userStateManager";
 import { ActionMenuFactory } from "./actionMenuFactory";
 import { WAITING_MESSAGE } from "./constants";
-import {
-  createShoppingAgent,
-  createProfileAgent,
-} from "../lib/agents";
+import { createShoppingAgent, createProfileAgent } from "../lib/agents";
 import { OrderToolWrapper } from "./orderToolWrapper";
 
 export interface AgentConfig {

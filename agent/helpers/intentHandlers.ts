@@ -26,7 +26,10 @@ export interface IntentHandlerContext {
   ) => Promise<void>;
   saveUserProfile: (profile: UserProfile) => Promise<void>;
   actionMenuFactory: {
-    sendWalletActionMenu: (conversation: Conversation, userInboxId: string) => Promise<void>;
+    sendWalletActionMenu: (
+      conversation: Conversation,
+      userInboxId: string
+    ) => Promise<void>;
   };
   xmtpClient: {
     preferences: {
@@ -212,20 +215,33 @@ export class IntentHandler {
     }
   }
 
-    async handleAssistantActivation(actionId: string): Promise<boolean> {
+  async handleAssistantActivation(actionId: string): Promise<boolean> {
     const { conversation, userInboxId, setUserContext } = this.context;
 
     // Handle special cases with dedicated methods
     if (actionId === "profile-management") {
-      return await this.handleProfileManagementActivation(conversation, userInboxId, setUserContext);
+      return await this.handleProfileManagementActivation(
+        conversation,
+        userInboxId,
+        setUserContext
+      );
     }
 
     if (actionId === "wallet-management") {
-      return await this.handleWalletManagementActivation(conversation, userInboxId, setUserContext);
+      return await this.handleWalletManagementActivation(
+        conversation,
+        userInboxId,
+        setUserContext
+      );
     }
 
     // Handle generic assistant activation
-    return await this.handleGenericAssistantActivation(actionId, conversation, userInboxId, setUserContext);
+    return await this.handleGenericAssistantActivation(
+      actionId,
+      conversation,
+      userInboxId,
+      setUserContext
+    );
   }
 
   private async handleProfileManagementActivation(
@@ -347,7 +363,9 @@ What would you like to do with your profile?`;
       ? `${address.line1}${address.line2 ? ` ${address.line2}` : ""}, ${address.city}, ${address.state} ${address.postalCode}, ${address.country || "US"}`
       : "Not set";
 
-    const profileStatus = userProfile.isComplete ? "✅ COMPLETE" : "❌ INCOMPLETE";
+    const profileStatus = userProfile.isComplete
+      ? "✅ COMPLETE"
+      : "❌ INCOMPLETE";
 
     return `
 📋 Your Current Profile Status: ${profileStatus}
@@ -434,7 +452,9 @@ ${!userProfile.isComplete ? "🚨 Your profile is incomplete. I can help you add
 
     // Validate ASIN format (10 characters, alphanumeric)
     if (!asin || asin.length !== 10) {
-      await conversation.send("❌ Invalid product identifier. Please try again.");
+      await conversation.send(
+        "❌ Invalid product identifier. Please try again."
+      );
       return true;
     }
 

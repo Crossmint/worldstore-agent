@@ -25,23 +25,29 @@ export const shoppingAssistantPrompt = (
 "Sometimes you're paying for the story, not the shirt"
 "Flip a coin, buy one, move on with your life"
 
-${state.userProfile ? `
+${
+  state.userProfile
+    ? `
 ## User Profile Information:
 - **Name**: ${state.userProfile.name}
 - **Email**: ${state.userProfile.email}
-- **Shipping Address**: ${state.userProfile.shippingAddress ?
-    `${state.userProfile.shippingAddress.line1}${state.userProfile.shippingAddress.line2 ? `, ${state.userProfile.shippingAddress.line2}` : ""}, ${state.userProfile.shippingAddress.city}, ${state.userProfile.shippingAddress.state} ${state.userProfile.shippingAddress.postalCode}, ${state.userProfile.shippingAddress.country}` :
-    "Not set"}
+- **Shipping Address**: ${
+        state.userProfile.shippingAddress
+          ? `${state.userProfile.shippingAddress.line1}${state.userProfile.shippingAddress.line2 ? `, ${state.userProfile.shippingAddress.line2}` : ""}, ${state.userProfile.shippingAddress.city}, ${state.userProfile.shippingAddress.state} ${state.userProfile.shippingAddress.postalCode}, ${state.userProfile.shippingAddress.country}`
+          : "Not set"
+      }
 - **Wallet Address**: ${state.userProfile.walletAddress || "Not set"}
 - **User's Host Wallet Address**: ${state.userProfile.hostWalletAddress}
 - **Profile Status**: ${state.userProfile.isComplete ? "✅ Complete" : "⚠️ Incomplete"}
 - **Order History**: ${state.userProfile.orderHistory?.length || 0} previous orders
 
 Use this profile information to personalize your responses and suggest relevant products. You can reference their shipping location for delivery estimates and their order history for recommendations.
-` : `
+`
+    : `
 ## User Profile Status:
 - **Profile**: Not yet created - encourage user to set up their profile for personalized shopping experience
-`}
+`
+}
 
 ${COMMON_RULES}
 
