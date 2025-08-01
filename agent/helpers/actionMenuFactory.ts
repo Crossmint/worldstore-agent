@@ -51,7 +51,9 @@ export class ActionMenuFactory {
     };
 
     await delayedSend(conversation, mainActions, ContentTypeActions);
-    await conversation.send("Use /help for information and support, or /menu to return here.");
+    await conversation.send(
+      "Use /help for information and support, or /menu to return here."
+    );
     // Sync conversation to ensure the menu is sent
     await conversation.sync();
 
@@ -80,7 +82,9 @@ export class ActionMenuFactory {
     };
 
     await delayedSend(conversation, agentsActions, ContentTypeActions);
-    await conversation.send("Use /help for information and support, or /menu to return here.")
+    await conversation.send(
+      "Use /help for information and support, or /menu to return here."
+    );
     await conversation.sync();
 
     logger.info("Agents menu sent", { userInboxId });
@@ -109,7 +113,9 @@ export class ActionMenuFactory {
 
     // await conversation.send(helpActions, ContentTypeActions);
     await delayedSend(conversation, helpActions, ContentTypeActions);
-    await conversation.send("Use /help for information and support, or /menu to return here.");
+    await conversation.send(
+      "Use /help for information and support, or /menu to return here."
+    );
     await conversation.sync();
 
     logger.info("Help menu sent", { userInboxId });

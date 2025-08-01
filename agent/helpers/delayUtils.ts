@@ -1,11 +1,11 @@
-import { setTimeout } from 'timers';
+import { setTimeout } from "timers";
 
 /**
  * Utility function to delay execution to prevent message order discrepancies
  * @param ms - Delay in milliseconds (default: 1500ms for non-agent messages)
  */
 export const delay = (ms = 1500): Promise<void> => {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 };
 
 /**

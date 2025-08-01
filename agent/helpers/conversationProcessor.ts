@@ -60,8 +60,9 @@ export class ConversationProcessor {
     console.log({ initialState, finalState });
 
     // Check if funding requirements exist before sending agent response
-    const fundingData = this.userStateManager.getFundingRequirement(userInboxId);
-    
+    const fundingData =
+      this.userStateManager.getFundingRequirement(userInboxId);
+
     // Only send agent response if no funding requirements (funding menu takes priority)
     if (!fundingData) {
       await this.sendAgentResponse(conversation, finalState);

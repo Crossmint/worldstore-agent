@@ -1,6 +1,9 @@
 import { validateEnvironment } from "./helpers/client";
 import { Client, type DecodedMessage, type Conversation } from "@xmtp/node-sdk";
-import { ContentTypeReaction, type Reaction } from "@xmtp/content-type-reaction";
+import {
+  ContentTypeReaction,
+  type Reaction,
+} from "@xmtp/content-type-reaction";
 import { type IntentContent } from "./lib/types/IntentContent";
 import { ChatAnthropic } from "@langchain/anthropic";
 import { logger } from "./helpers/logger";
@@ -113,7 +116,8 @@ class XMTPShoppingBot {
         // Send automatic reaction to the received message
         try {
           const reactions = ["🤔", "👀", "🫡", "👍", "💫", "⚡"];
-          const randomReaction = reactions[Math.floor(Math.random() * reactions.length)];
+          const randomReaction =
+            reactions[Math.floor(Math.random() * reactions.length)];
 
           const reaction: Reaction = {
             reference: message.id,
@@ -122,16 +126,22 @@ class XMTPShoppingBot {
             schema: "unicode", // Required schema property
           };
 
-          await conversation.send(reaction as unknown as string, ContentTypeReaction);
+          await conversation.send(
+            reaction as unknown as string,
+            ContentTypeReaction
+          );
 
           logger.info("Sent automatic reaction", {
             messageId: message.id,
             senderInboxId: message.senderInboxId,
-            reaction: randomReaction
+            reaction: randomReaction,
           });
         } catch (reactionError) {
           logger.error("Failed to send automatic reaction", {
-            error: reactionError instanceof Error ? reactionError.message : String(reactionError),
+            error:
+              reactionError instanceof Error
+                ? reactionError.message
+                : String(reactionError),
             messageId: message.id,
             senderInboxId: message.senderInboxId,
           });
