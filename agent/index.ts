@@ -8,6 +8,7 @@ import { FundingData, UserProfile } from "./lib/types";
 import { loadUserProfile } from "@helpers/loadUserProfile";
 import { saveUserProfile } from "services/redis";
 import { getMenuType } from "@helpers/toShowMenu";
+import { delayedSend } from "@helpers/delayUtils";
 
 import { ActionMenuFactory } from "@helpers/actionMenuFactory";
 import { ConversationProcessor } from "@helpers/conversationProcessor";
@@ -156,18 +157,12 @@ class XMTPShoppingBot {
                 conversation,
                 userInboxId
               );
-              await conversation.send(
-                "Use /menu or /agents to see AI assistants, or /help to return here."
-              );
               break;
 
             case "agents":
               await this.actionMenuFactory.sendAgentsMenu(
                 conversation,
                 userInboxId
-              );
-              await conversation.send(
-                "Use /help for information and support, or /menu to return here."
               );
               break;
 
@@ -176,9 +171,6 @@ class XMTPShoppingBot {
               await this.actionMenuFactory.sendMainActionMenu(
                 conversation,
                 userInboxId
-              );
-              await conversation.send(
-                "Use /help for information or /menu for AI assistants."
               );
               break;
           }
@@ -248,7 +240,8 @@ class XMTPShoppingBot {
             (await intentHandler.handleQuickReply(intentContent.actionId));
 
           if (!handled) {
-            await conversation.send(
+            await delayedSend(
+              conversation,
               `❌ Unknown action: ${intentContent.actionId}`
             );
             logger.warn("Unknown intent action", {
@@ -262,7 +255,8 @@ class XMTPShoppingBot {
             actionId: intentContent.actionId,
             userInboxId,
           });
-          await conversation.send(
+          await delayedSend(
+            conversation,
             `❌ Error processing action: ${error instanceof Error ? error.message : String(error)}`
           );
         }

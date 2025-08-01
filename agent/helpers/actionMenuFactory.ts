@@ -6,6 +6,7 @@ import {
 import { AGENT_EMOJIS, FundingData } from "../lib/types";
 import { formatUnits } from "viem";
 import { logger } from "./logger";
+import { delayedSend } from "./delayUtils";
 
 export class ActionMenuFactory {
   async sendMainActionMenu(
@@ -49,7 +50,9 @@ export class ActionMenuFactory {
       ],
     };
 
-    await conversation.send(mainActions, ContentTypeActions);
+    await delayedSend(conversation, mainActions, ContentTypeActions);
+    await conversation.send("Use /help for information and support, or /menu to return here.");
+    // Sync conversation to ensure the menu is sent
     await conversation.sync();
 
     logger.info("Main action menu sent", { userInboxId });
@@ -76,7 +79,8 @@ export class ActionMenuFactory {
       ],
     };
 
-    await conversation.send(agentsActions, ContentTypeActions);
+    await delayedSend(conversation, agentsActions, ContentTypeActions);
+    await conversation.send("Use /help for information and support, or /menu to return here.")
     await conversation.sync();
 
     logger.info("Agents menu sent", { userInboxId });
@@ -103,7 +107,9 @@ export class ActionMenuFactory {
       ],
     };
 
-    await conversation.send(helpActions, ContentTypeActions);
+    // await conversation.send(helpActions, ContentTypeActions);
+    await delayedSend(conversation, helpActions, ContentTypeActions);
+    await conversation.send("Use /help for information and support, or /menu to return here.");
     await conversation.sync();
 
     logger.info("Help menu sent", { userInboxId });
