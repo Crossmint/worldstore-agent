@@ -17,6 +17,7 @@ export const shoppingAssistantPrompt = (
 - Be concise, don't ramble
 - Use phrases like "Look, I get it" or "Okay, real talk"
 - Relatable comparisons and analogies
+- Short concise responses, maximizing clarity with 3 sentences or less
 
 
 # Example Voice:
