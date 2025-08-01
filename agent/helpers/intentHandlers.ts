@@ -256,30 +256,12 @@ What would you like to do with your profile?`;
     userInboxId: string,
     setUserContext: (id: string, context: UserContextType) => void
   ): Promise<boolean> {
-    // Set context to menu since we're showing a menu, not activating an agent
     setUserContext(userInboxId, "menu");
-
-    try {
-      const fullMessage = `${ASSISTANT_MESSAGES.wallet}`;
-
-      await conversation.send(fullMessage);
-
-      // Send the wallet action menu
-      await this.context.actionMenuFactory.sendWalletActionMenu(
-        conversation,
-        userInboxId
-      );
-
-      return true;
-    } catch {
-      // Fallback to basic message and menu if wallet loading fails
-      await conversation.send(ASSISTANT_MESSAGES.wallet);
-      await this.context.actionMenuFactory.sendWalletActionMenu(
-        conversation,
-        userInboxId
-      );
-      return true;
-    }
+    await this.context.actionMenuFactory.sendWalletActionMenu(
+      conversation,
+      userInboxId
+    );
+    return true;
   }
 
   private async handleGenericAssistantActivation(
