@@ -1,55 +1,141 @@
-# XMTP 402 Worldstore Agent
+# XMTP Worldstore Agent
 
-## what is it?
-Demonstration of an XMTP bot that enables crypto-powered Amazon purchases through the x402 payment protocol and Crossmint's headless checkout APIs.
+> **The AI shopping assistant that speaks crypto.** Natural language Amazon orders, USDC payments, zero blockchain headaches.
 
-- Supported Network: Base (Sepolia & Mainnet)
-- Supported Currency: USDC (`0x036CbD53842c5426634e7929541eC2318f3dCF7e` on Base Sepolia and `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` on Base Mainnet)
-- **Storage**: Redis for high-performance data management with filesystem fallback
-- Tech Stack
-  - Client: XMTP
-  - Bot framework: Langgraph
-  - Storage: Redis with JSON search capabilities
-  - Backend: custom facilitator + crossmint API wrapper; returns 402 for `/order` API and calls Crossmint's APIs internally
+This is the conversational brain of the Worldstore system - an XMTP agent that transforms "I need headphones" into Amazon packages at your door. It's Claude Sonnet 4 with a shopping addiction and a deterministic wallet.
 
-## Redis Integration
+## What Makes This Different
 
-The bot now uses Redis for enhanced performance and scalability:
+Most crypto shopping bots are essentially command-line interfaces with extra steps. This one actually converses like a human who happens to be really good at finding products and processing payments.
 
-### **Benefits**
-- **In-memory performance** for faster user profile and order operations
-- **Atomic operations** preventing race conditions in order updates
-- **JSON document queries** for complex user data searches
-- **TTL support** for conversation state caching
-- **Search indexes** for user analytics and management
-- **Horizontal scaling** capabilities
-
-### **Storage Structure**
+**Before (typical crypto commerce):**
 ```
-Redis Keys:
-- user:{inboxId}           # User profile JSON documents
-- xmtp:{clientKey}:{data}  # XMTP client data
-- conversation:{inboxId}   # Cached conversation state (TTL: 1h)
-- activity:{inboxId}:{date} # User activity tracking (TTL: 7d)
+> /search headphones
+> /select item_id_7284729 
+> /checkout
+> *15 MetaMask popups later*
 ```
 
-### **Environment Variables**
+**After (this agent):**
+```
+User: "Need good wireless headphones under $150"
+Agent: "Found Sony WH-1000XM4 for $129.99. Great noise cancellation, 
+       30-hour battery. Want to order them?"
+User: "Perfect, send to my usual address"
+Agent: *quietly handles everything*
+```
+
+The difference? This agent remembers you're a human, not a API endpoint.
+
+## Core Capabilities
+
+### Conversations That Don't Suck
+- **Natural language processing** powered by Claude Sonnet 4
+- **Context awareness** across message threads
+- **Profile memory** so you don't repeat your address 47 times
+- **Interactive action buttons** for mobile-friendly experiences
+- **Slash commands** for power users who want shortcuts
+
+### Payments That Actually Work
+- **Deterministic wallets** generated per user (no seed phrase management)
+- **Gasless USDC payments** via EIP-3009 signatures
+- **Multi-network support** (Base, Ethereum, Polygon, Arbitrum)
+- **Balance checking** with helpful funding prompts
+- **Smart funding requests** with action buttons instead of immediate wallet popups
+
+### Storage That Scales
+- **Redis integration** for production performance
+- **Automatic migration** from filesystem to Redis
+- **Graceful fallback** when Redis is unavailable
+- **JSON search capabilities** for complex user queries
+- **TTL management** for conversation caching
+
+## 3-Minute Setup
+
+### What You Need
+- **Node.js 20+** (life's too short for old Node)
+- **PNPM** (`npm install -g pnpm`)
+- **Anthropic API key** (for the Claude magic)
+- **XMTP wallet private key** (for messaging protocol access)
+- **Running x402 server** (see `/server` directory)
+
+### Environment Configuration
+
 ```bash
-# Redis Configuration
+# Copy the template
+cp .env.template .env
+```
+
+Your `.env` should include:
+
+```bash
+# AI Configuration
+ANTHROPIC_API_KEY=sk-ant-your-key-here
+
+# XMTP Protocol  
+XMTP_KEY=0x1234abcd...  # Private key for XMTP client
+
+# Backend Integration
+WORLDSTORE_API_URL=http://localhost:3000  # Your x402 server
+
+# Redis (highly recommended for production)
 REDIS_HOST=localhost
 REDIS_PORT=6379
-REDIS_PASSWORD=           # Optional
-REDIS_DB=0               # Default database
+REDIS_PASSWORD=          # Optional
+REDIS_DB=0              # Default database
+
+# Optional: Debugging
+DEBUG_AGENT=false       # Enable detailed logging
 ```
 
-### **Installation Options**
+### Installation & Startup
+
+```bash
+# Install dependencies
+pnpm install
+
+# Start Redis (recommended)
+docker run -d --name redis-stack -p 6379:6379 redis/redis-stack:latest
+
+# Run the agent
+pnpm dev
+```
+
+**That's it.** The agent will automatically:
+- Connect to XMTP network
+- Initialize storage (Redis or filesystem fallback)  
+- Migrate existing data if needed
+- Start listening for messages
+
+## Redis: The Performance Upgrade
+
+Redis isn't required, but it transforms this from "pretty good" to "production ready." Here's why you want it:
+
+### Performance Benefits
+- **Sub-millisecond user profile lookups** instead of filesystem reads
+- **Atomic operations** preventing race conditions during orders
+- **JSON search capabilities** for complex user data queries
+- **Conversation caching** with automatic TTL expiration
+- **Horizontal scaling** when you need to handle more users
+
+### Storage Architecture
+
+```
+Redis Key Structure:
+├── user:{inboxId}                    # User profiles (JSON docs)
+├── xmtp:{clientKey}:{data}          # XMTP protocol data
+├── conversation:{inboxId}           # Cached state (1h TTL)
+└── activity:{inboxId}:{date}        # Analytics data (7d TTL)
+```
+
+### Redis Setup Options
 
 **Option 1: Docker (Recommended)**
 ```bash
-# Run Redis Stack with all modules
+# Full Redis Stack with JSON and search modules
 docker run -d --name redis-stack -p 6379:6379 redis/redis-stack:latest
 
-# Verify it's running
+# Verify it's working
 redis-cli ping  # Should return PONG
 ```
 
@@ -59,175 +145,245 @@ redis-cli ping  # Should return PONG
 brew install redis
 brew services start redis
 
-# Ubuntu/Debian
+# Ubuntu/Debian  
 sudo apt update && sudo apt install redis-server
 sudo systemctl start redis-server
 ```
 
-**Note:** For full features (JSON documents, search indexes), Redis Stack is required. Standard Redis will work with basic functionality but without advanced search features.
+**Important:** For full functionality (JSON documents, search indexes), you need Redis Stack. Basic Redis will work but with limited features.
 
-### **Migration**
-The bot automatically migrates existing filesystem data to Redis on startup. Manual migration is also available:
+### Migration & Fallback
+
+The agent handles data migration automatically:
 
 ```bash
-# Migrate filesystem data to Redis
+# Manual migration (if needed)
 pnpm run migrate
 
-# Rollback to filesystem (if needed)
+# Rollback to filesystem
 pnpm run migrate:rollback
 ```
 
-### **Fallback Behavior**
-If Redis is unavailable, the bot gracefully falls back to filesystem storage, ensuring continuous operation.
+If Redis goes down, the agent gracefully falls back to filesystem storage. Your users won't notice, but you'll want to fix Redis for performance reasons.
 
-## under the hood
-- the bot has a deterministic wallet generated per user
-- before being able to do anything the bot requires the user to set their: name, email, shipping address
-- the system uses a unified shopping agent that handles all user interactions through specialized tools
-- after deciding on a product (either searching or directly providing an ASIN code)
-- the bot queries the x402 server (worldstore API endpoint)
-  - makes initial POST to `/api/orders` with order details
-  - receives a 402 Payment Required status
-  - extracts payment requirements from the response
-- the bot generates an EIP-712 signature for USDC authorization
-  - creates `TransferWithAuthorization` signature using user's deterministic wallet
-  - encodes payment payload with signature and authorization details
-- the bot retries the order request with `X-PAYMENT` header containing the encoded payment
-- the **x402 facilitator** processes the payment and completes the order
-- the user gets an orderid that they can query to check order status
+## User Interaction Patterns
 
-## available tools:
-- **Profile Management**: `edit_profile`, `read_profile`
-- **Shopping**: `search_product`, `order_product`
-- **Order Tracking**: `get_user_order_history`, `get_order_status`
-- **Onchain Operations**: GOAT SDK tools for wallet interactions
-
-## Enhanced User Experience Features
-
-### Interactive Action Buttons for Insufficient Funds
-
-The agent now supports interactive action buttons when users encounter insufficient funds during checkout. Instead of immediately sending wallet transaction requests, the agent provides users with clear options:
-
-#### How It Works
-
-1. **Insufficient Funds Detection**: When a user attempts to purchase a product but lacks sufficient USDC, the system detects this during the payment process.
-
-2. **Action Buttons Display**: Instead of an immediate wallet transfer request, users receive interactive buttons:
-   - 💸 **Add Funds Now** - Initiates the wallet funding request
-   - ❌ **Cancel Order** - Cancels the current order attempt
-   - 💰 **Check Balance** - Shows current USDC balance
-
-3. **User Choice**: Users can tap their preferred action button, which sends an "intent" message back to the agent.
-
-4. **Action Processing**: The agent processes the intent and takes the appropriate action:
-   - **Add Funds**: Sends the wallet transfer request for the exact shortfall amount
-   - **Cancel**: Clears the pending order and provides next step guidance
-   - **Check Balance**: Displays current wallet balance information
-
-#### Technical Implementation
-
-- **New Content Types**: Implements `ActionsCodec` and `IntentCodec` for interactive messaging
-- **Enhanced Flow**: Replaces immediate wallet requests with user-controlled actions
-- **Fallback Support**: Provides text-based fallback for clients that don't support action buttons
-
-#### Benefits
-
-- **Better UX**: Users have control over when to fund their wallets
-- **Clearer Communication**: Explicit funding requirements and options
-- **Reduced Friction**: Users understand exactly what's needed and can choose their path
-- **Mobile-Friendly**: Tap-based interactions work well on mobile XMTP clients
-
-This enhancement maintains full backward compatibility while providing a significantly improved user experience for clients that support interactive actions.
-
-## workflow diagram
-
-```mermaid
-graph TD
-    START["🚀 Bot Startup"] --> REDIS_INIT["🔴 Initialize Redis"]
-    REDIS_INIT --> REDIS_CHECK{Redis Connected?}
-
-    REDIS_CHECK -->|✅ Yes| DATA_CHECK{Existing Data?}
-    REDIS_CHECK -->|❌ No| FILESYSTEM_FALLBACK["📁 Fallback to Filesystem"]
-
-    DATA_CHECK -->|Found| AUTO_MIGRATE["🔄 Auto-migrate to Redis"]
-    DATA_CHECK -->|None| REDIS_READY["✅ Redis Ready"]
-
-    AUTO_MIGRATE --> BACKUP["💾 Backup Original Files"]
-    BACKUP --> MIGRATE_PROFILES["👤 Migrate User Profiles"]
-    MIGRATE_PROFILES --> CREATE_INDEXES["🔍 Create Search Indexes"]
-    CREATE_INDEXES --> VERIFY["✅ Verify Migration"]
-    VERIFY --> REDIS_READY
-
-    FILESYSTEM_FALLBACK --> CREATE_DIRS["📂 Create Directories"]
-    CREATE_DIRS --> FILESYSTEM_READY["📁 Filesystem Ready"]
-
-    REDIS_READY --> INIT_XMTP["📡 Initialize XMTP Client"]
-    FILESYSTEM_READY --> INIT_XMTP
-
-    INIT_XMTP --> load_profile[Load User Profile]
-    load_profile --> create_agent[Create Agent]
-    create_agent --> shopping_node[Shopping Agent Node]
-
-    shopping_node --> message_receive[Receive XMTP Message]
-    message_receive --> message_filter{Filter Message}
-    message_filter -->|Valid| sync_conversation[Sync Conversation]
-    message_filter -->|Invalid| END
-
-    sync_conversation --> invoke_agent[Invoke LangGraph Agent]
-
-    invoke_agent --> profile_tools[Profile Management Tools]
-    invoke_agent --> shopping_tools[Shopping Tools]
-    invoke_agent --> order_tools[Order Processing Tools]
-    invoke_agent --> goat_tools[GOAT SDK Tools]
-
-    order_tools --> X402_Flow
-
-    subgraph X402_Flow ["💳 x402 Payment Flow"]
-        initial_request[POST /api/orders<br/>- Send order details]
-        payment_required[Receive 402<br/>- Extract payment requirements]
-        generate_signature[Generate EIP-712 Signature<br/>- USDC TransferWithAuthorization<br/>- Use deterministic wallet]
-        retry_payment[Retry with X-PAYMENT<br/>- Include encoded payload<br/>- Complete order]
-
-        initial_request --> payment_required
-        payment_required --> generate_signature
-        generate_signature --> retry_payment
-    end
-
-    profile_tools --> send_response[Send Response]
-    shopping_tools --> send_response
-    order_tools --> send_response
-    goat_tools --> send_response
-
-    send_response --> END
-
-    %% Storage Integration
-    subgraph Redis_Storage ["🔴 Redis Storage"]
-        user_profiles_redis[User Profiles<br/>JSON Documents with Search]
-        xmtp_data_redis[XMTP Client Data<br/>Key-Value with TTL]
-        conversation_cache[Conversation Cache<br/>1h TTL]
-        activity_tracking[Activity Analytics<br/>7d TTL]
-    end
-
-    subgraph Filesystem_Storage ["📁 Filesystem Fallback"]
-        user_profiles_fs[User Profile JSON Files<br/>.data/user-profiles/]
-        xmtp_data_fs[XMTP SQLite DBs<br/>.data/xmtp/]
-    end
-
-    REDIS_READY -.-> Redis_Storage
-    FILESYSTEM_READY -.-> Filesystem_Storage
-
-    %% Styling
-    classDef mainFlow fill:#e1f5fe
-    classDef xmtpFlow fill:#e8f5e8
-    classDef toolsFlow fill:#fff3e0
-    classDef paymentFlow fill:#fce4ec
-    classDef redisFlow fill:#ffebee
-    classDef filesystemFlow fill:#f3e5f5
-
-    class START,REDIS_INIT,load_profile,create_agent,shopping_node,END mainFlow
-    class message_receive,message_filter,sync_conversation,invoke_agent,send_response xmtpFlow
-    class profile_tools,shopping_tools,order_tools,goat_tools toolsFlow
-    class initial_request,payment_required,generate_signature,retry_payment paymentFlow
-    class REDIS_CHECK,AUTO_MIGRATE,BACKUP,MIGRATE_PROFILES,CREATE_INDEXES,VERIFY,REDIS_READY,Redis_Storage redisFlow
-    class FILESYSTEM_FALLBACK,CREATE_DIRS,FILESYSTEM_READY,Filesystem_Storage filesystemFlow
+### Profile Setup (First Time Users)
 ```
+Agent: "Hi! I'm your crypto shopping assistant. To get started, 
+       I'll need your name, email, and shipping address."
+       
+User: "John Doe, john@example.com, 123 Main St, NYC"
+
+Agent: "Perfect! Profile saved. Now you can shop with just 
+       'order headphones' or 'find a laptop under $1000'"
+```
+
+### Natural Language Shopping  
+```
+User: "I need a wireless mouse for gaming"
+
+Agent: "Found Logitech G Pro X Superlight for $149.99. 
+       25,600 DPI, 63g weight, great for competitive gaming. 
+       Order it?"
+
+User: "Yes"
+
+Agent: *checks USDC balance, processes payment*
+```
+
+### Funding Flow (When Balance is Low)
+```
+Agent: "You need $89.99 USDC but only have $23.45. 
+       What would you like to do?"
+       
+[💸 Add Funds Now] [❌ Cancel Order] [💰 Check Balance]
+
+User: *taps "Add Funds Now"*
+
+Agent: *sends wallet request for $66.54 USDC*
+```
+
+### Slash Commands for Power Users
+- `/clear` - Reset conversation context (fresh start)
+- `/menu` - Show main action menu with buttons  
+- `/help` - Display help and available commands
+- `/profile` - View/edit your profile information
+- `/orders` - View order history and tracking
+
+## Technical Architecture
+
+### AI Agent Framework
+```
+LangGraph Agent
+├── Profile Management Tools
+│   ├── edit_profile()
+│   └── read_profile()
+├── Shopping Tools  
+│   ├── search_product()
+│   └── order_product()
+├── Order Management Tools
+│   ├── get_user_order_history()
+│   └── get_order_status()
+└── GOAT SDK Tools
+    ├── Wallet operations
+    └── USDC balance checking
+```
+
+### Payment Flow Deep Dive
+
+1. **User Intent**: "Order this product"
+2. **Product Lookup**: Agent queries x402 server for pricing
+3. **Balance Check**: GOAT SDK checks user's USDC balance
+4. **Payment Generation**: If sufficient funds, generates EIP-3009 signature
+5. **Order Submission**: Sends signed payment to x402 server
+6. **Fulfillment**: Server processes payment and places Amazon order
+7. **Confirmation**: User gets order ID and tracking info
+
+### Deterministic Wallets
+
+Each user gets a deterministic wallet derived from their XMTP identity:
+- **No seed phrase management** required
+- **Consistent addresses** across sessions
+- **Automatic wallet creation** on first interaction
+- **Secure key derivation** using XMTP client keys
+
+## Production Considerations
+
+### Error Handling That Doesn't Suck
+- **Graceful degradation** when external services fail
+- **Informative error messages** users can actually understand
+- **Automatic retries** for transient failures
+- **Fallback behaviors** when primary systems are down
+
+### Logging for Humans
+```bash
+# Enable detailed logging
+DEBUG_AGENT=true pnpm dev
+```
+
+Logs include:
+- User interaction patterns
+- Payment flow debugging
+- Redis/filesystem operations
+- XMTP protocol events
+- Error traces with context
+
+### Security Boundaries
+- **API key management** with environment isolation
+- **Wallet isolation** per user with deterministic generation  
+- **Payment authorization** through cryptographic signatures
+- **Input validation** on all user-provided data
+
+## Advanced Features
+
+### Interactive Action Buttons
+
+Instead of immediately sending wallet requests when funds are insufficient, the agent provides user-controlled options:
+
+```typescript
+// Enhanced UX with action buttons
+const insufficientFundsResponse = {
+  content: "You need $89.99 USDC but only have $23.45",
+  actions: [
+    { label: "💸 Add Funds Now", intent: "fund_wallet" },
+    { label: "❌ Cancel Order", intent: "cancel_order" },
+    { label: "💰 Check Balance", intent: "check_balance" }
+  ]
+}
+```
+
+### Conversation Context Management
+
+The `/clear` command provides users control over conversation history:
+- **Resets agent context** while preserving XMTP message history
+- **Clears funding requirements** and profile menu states
+- **Enables fresh starts** without losing user data
+- **Maintains user profiles** and order history
+
+### Multi-Network Payment Support
+
+Automatically selects optimal payment network based on:
+- **User preference** (if specified)
+- **Current gas fees** across networks
+- **USDC availability** in user wallet
+- **Network reliability** and confirmation times
+
+## Troubleshooting
+
+### Common Issues
+
+**Agent not responding to messages:**
+```bash
+# Check XMTP connection
+pnpm dev --verbose
+
+# Verify environment variables
+echo $XMTP_KEY $ANTHROPIC_API_KEY
+```
+
+**Redis connection failures:**
+```bash
+# Test Redis connectivity
+redis-cli ping
+
+# Check Redis logs
+docker logs redis-stack
+```
+
+**Payment authorization failures:**
+```bash
+# Verify x402 server is running
+curl http://localhost:3000/api/orders/facilitator/health
+
+# Check network configurations
+# Ensure USDC contracts match your target networks
+```
+
+### Debug Mode
+
+Enable comprehensive logging:
+```bash
+DEBUG_AGENT=true pnpm dev
+```
+
+This provides detailed insights into:
+- Message processing flow
+- AI agent decision making
+- Payment signature generation
+- Redis operations and fallbacks
+
+## Development Workflow
+
+```bash
+# Development with hot reload
+pnpm dev
+
+# Production mode
+pnpm start
+
+# Run tests (if available)
+pnpm test
+
+# Check TypeScript
+pnpm type:check
+
+# Lint and format
+pnpm lint
+```
+
+## Network Support
+
+The agent works across multiple networks for maximum user flexibility:
+
+| Network | USDC Contract | Status |
+|---------|---------------|---------|
+| **Base Mainnet** | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` | ✅ Production |
+| **Base Sepolia** | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` | ✅ Testnet |
+| **Ethereum** | `0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48` | ✅ Production |
+| **Polygon** | `0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359` | ✅ Production |
+| **Arbitrum** | `0xaf88d065e77c8cC2239327C5EDb3A432268e5831` | ✅ Production |
+
+Users can specify network preference or let the agent choose the optimal one based on fees and availability.
+
+This agent transforms crypto shopping from a technical exercise into a natural conversation. Your users will forget they're using blockchain technology, which is exactly the point.
