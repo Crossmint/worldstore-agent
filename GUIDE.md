@@ -14,7 +14,7 @@ Having followed this tutorial, you'll have a working system where users can chat
 6. [User Experience Walkthrough](#user-experience-walkthrough)
 7. [Production Considerations](#production-considerations)
 8. [Troubleshooting Guide](#troubleshooting-guide)
-9. [Extension Opportunities](#extension-opportunities)
+9. [Extension Opportunities](#-extension-opportunities) *(toggle)*
 
 ---
 
