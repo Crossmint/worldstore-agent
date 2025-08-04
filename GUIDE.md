@@ -279,7 +279,7 @@ sequenceDiagram
 ```
 
 
-***Yes, that sequence diagram looks like a distributed systems horror story at first glance—we get it. Nine different services for buying earbuds feels like overkill until you realize each one handles exactly one thing well, and the magic happens in the orchestration. The complexity is all hidden behind simple conversation, which is exactly the point.***
+***Yes, that sequence diagram looks like a distributed systems horror story at first glance, we get it. Nine different services for buying earbuds feels like overkill until you realize each one handles exactly one thing well, and the magic happens in the orchestration. The complexity is all hidden behind simple conversation, which is exactly the point.***
 
 
 
