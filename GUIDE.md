@@ -25,7 +25,7 @@ The Worldstore Agent is a monorepo containing two symbiotic services that create
 ### The Big Picture
 
 ```
-User Message ’ XMTP Agent ’ AI Processing ’ Product Search ’ Order Creation ’ x402 Payment ’ Amazon Fulfillment
+User Message ï¿½ XMTP Agent ï¿½ AI Processing ï¿½ Product Search ï¿½ Order Creation ï¿½ x402 Payment ï¿½ Amazon Fulfillment
 ```
 
 But here's what actually happens under the hood:
@@ -148,11 +148,90 @@ utils/logger.js    // Structured logging for debugging
 3. **Payment Retry** - Client includes x402 payment header
 4. **Order Fulfillment** - Server processes payment and places Amazon order
 
+### System Sequence Flow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant XMTP as XMTP Protocol
+    participant Agent as XMTP Agent
+    participant Redis as Redis Cache
+    participant Claude as Claude AI
+    participant SerpAPI as SerpAPI
+    participant Server as x402 Server
+    participant Crossmint as Crossmint API
+    participant Amazon as Amazon
+
+    %% Initial Product Search
+    User->>XMTP: "I want wireless earbuds"
+    XMTP->>Agent: Message received
+    Agent->>Redis: Get user profile
+    Redis-->>Agent: User data/empty
+    Agent->>Claude: Process message intent
+    Claude-->>Agent: Product search needed
+    Agent->>SerpAPI: Search "wireless earbuds"
+    SerpAPI-->>Agent: Product results
+    Agent->>Claude: Format response with products
+    Claude-->>Agent: Formatted product list
+    Agent->>XMTP: Send product options
+    XMTP->>User: Display products with prices
+
+    %% Order Initiation
+    User->>XMTP: Click "Buy AirPods Pro"
+    XMTP->>Agent: Order button clicked
+    Agent->>Redis: Check user profile completeness
+    Redis-->>Agent: Missing shipping info
+    Agent->>XMTP: Request shipping details
+    XMTP->>User: "Need shipping address"
+    User->>XMTP: Provides address details
+    XMTP->>Agent: Address received
+    Agent->>Redis: Store user profile
+    Agent->>Agent: Generate deterministic wallet
+    Agent->>Agent: Check USDC balance (multiple networks)
+    
+    alt User has sufficient USDC
+        Agent->>Server: POST /api/orders (no payment)
+        Server-->>Agent: 402 Payment Required + details
+        Agent->>Agent: Generate EIP-3009 permit signature
+        Agent->>Server: POST /api/orders (with X-PAYMENT header)
+        Server->>Server: Validate signature
+        Server->>Crossmint: Create Amazon order
+        Crossmint->>Amazon: Place order with user details
+        Amazon-->>Crossmint: Order confirmation
+        Crossmint->>Crossmint: Execute permit (transfer USDC)
+        Crossmint-->>Server: Order success + tracking
+        Server-->>Agent: Order confirmation
+        Agent->>Redis: Store order details
+        Agent->>XMTP: Order success message
+        XMTP->>User: "Order placed! Tracking: XYZ"
+    else User needs funding
+        Agent->>XMTP: Request funding
+        XMTP->>User: "Send USDC to: 0xabc..."
+        User->>User: Sends USDC to wallet
+        Agent->>Agent: Detect incoming USDC
+        Agent->>XMTP: Auto-notify funding received
+        XMTP->>User: "Payment received! Processing..."
+        Note over Agent: Resume order flow from payment
+    end
+
+    %% Order Status Check
+    User->>XMTP: "Where's my order?"
+    XMTP->>Agent: Status request
+    Agent->>Redis: Get order details
+    Redis-->>Agent: Order ID
+    Agent->>Server: GET /api/orders/{id}/status
+    Server->>Crossmint: Check order status
+    Crossmint-->>Server: Shipping status
+    Server-->>Agent: Current status
+    Agent->>XMTP: Status update
+    XMTP->>User: "Out for delivery by 8 PM"
+```
+
 ### Data Flow Between Services
 
 ```
-XMTP Message ’ Agent Processing ’ Order Decision ’ Payment Server ’ Crossmint ’ Amazon
-     “              “                    “             “            “         “
+XMTP Message ï¿½ Agent Processing ï¿½ Order Decision ï¿½ Payment Server ï¿½ Crossmint ï¿½ Amazon
+     ï¿½              ï¿½                    ï¿½             ï¿½            ï¿½         ï¿½
    Redis         Claude AI         Wallet Signature  x402 Protocol Treasury   Shipping
 ```
 
@@ -268,8 +347,8 @@ DEBUG=false
 pnpm start
 
 # Should see:
-# =€ x402 + Crossmint API Server started
-# =Í Running on: http://localhost:3000
+# =ï¿½ x402 + Crossmint API Server started
+# =ï¿½ Running on: http://localhost:3000
 ```
 
 ### Step 4: Start Redis (If Running Locally)
@@ -315,7 +394,7 @@ curl http://localhost:3000/health
 
 # Check agent logs - should show:
 #  XMTP Shopping Bot initialized
-# =á Listening for messages...
+# =ï¿½ Listening for messages...
 ```
 
 Perfect! Both services are now running and ready to process orders.
@@ -434,12 +513,12 @@ Let's follow Sarah, a crypto newcomer, through her first purchase:
 ```
 I found some solid workout earbuds for you! Here are the top picks:
 
-<§ AirPods Pro (2nd Gen) - $179
+<ï¿½ AirPods Pro (2nd Gen) - $179
    - Sweat/water resistant, great noise canceling
    - 30hr battery life, secure fit
    P 4.5/5 (50K reviews)
 
-<§ Beats Fit Pro - $149  
+<ï¿½ Beats Fit Pro - $149  
    - Specifically designed for workouts
    - Secure-fit wingtips, 24hr battery
    P 4.4/5 (15K reviews)
@@ -464,7 +543,7 @@ Great choice! The AirPods Pro are fantastic for workouts.
 
 I'll need a few details to ship these to you:
 
-=Ë Quick Setup:
+=ï¿½ Quick Setup:
 " Full Name: 
 " Email:
 " Shipping Address:
@@ -478,7 +557,7 @@ Just tell me and I'll get your profile set up.
 ```
 Perfect! Profile created 
 
-=æ Order Summary:
+=ï¿½ Order Summary:
 " AirPods Pro (2nd Gen) - $179
 " Shipping: FREE
 " Total: $179 USDC
@@ -502,7 +581,7 @@ Ready to complete your order?
 
 I found your wallet! But you need $179 USDC to complete this order.
 
-=° Fund Your Purchase:
+=ï¿½ Fund Your Purchase:
 You can send USDC to any of these addresses:
 
 " Ethereum: 0xabc123... (your wallet)
@@ -524,13 +603,13 @@ Once you send USDC, I'll automatically complete your order!
 
 **Agent Response (automatic):**
 ```
-=° Payment received! $200 USDC detected on Base.
+=ï¿½ Payment received! $200 USDC detected on Base.
 
-=€ Completing your order...
+=ï¿½ Completing your order...
 
  Order confirmed! 
 
-=æ Order Details:
+=ï¿½ Order Details:
 " Order ID: CM_789abc
 " AirPods Pro (2nd Gen) - $179
 " Shipping: 2-3 business days  
@@ -553,9 +632,9 @@ Your remaining balance: $21 USDC
 
 **Agent Response:**
 ```
-=æ Your AirPods Pro order:
+=ï¿½ Your AirPods Pro order:
 
-Status: Out for Delivery! =š
+Status: Out for Delivery! =ï¿½
 Tracking: 1Z999AA123456789
 Expected: Today by 8 PM
 
@@ -572,10 +651,10 @@ Need anything else?
 ```
 Glad you love them! Here are some solid cases:
 
-=á Apple MagSafe Case - $49
+=ï¿½ Apple MagSafe Case - $49
    - Perfect fit, wireless charging compatible
    
-=á Spigen Tough Armor - $24
+=ï¿½ Spigen Tough Armor - $24
    - Drop protection, more budget-friendly
 
 Want me to add one to your next order?
