@@ -54,56 +54,83 @@ src/
 
 Clean, boring, and maintainable. Just how payment processing should be.
 
-## 2-Minute Setup
+## 5-Minute Server Setup
 
-### What You Need First
-- **Node.js 18+** (because we're not savages)
-- **Crossmint account** with API access (for Amazon fulfillment)
-- **Crossmint treasury wallet** funded on your target networks
-- **Basic understanding of EIP-3009** (or trust that it works)
+### Prerequisites
+- **Node.js 20+** (`node --version`)
+- **Crossmint account** with API access (sign up at crossmint.com)
+- **Crossmint treasury wallet** created and funded
+- **Basic understanding of EIP-3009** (gasless USDC payments)
+
+### Quick Start
+
+```bash
+# Install dependencies (from server directory)
+pnpm install
+
+# Copy and configure environment
+cp .env.template .env
+# Edit .env with your Crossmint credentials
+
+# Start the server
+pnpm dev  # Development with auto-reload
+pnpm start  # Production mode
+```
 
 ### Environment Configuration
 
-```bash
-# Install and configure
-npm install
-cp .env.template .env
-```
-
-Your `.env` needs these essentials:
+**Critical Environment Variables:**
 
 ```bash
-# Crossmint Integration (the important stuff)
-CROSSMINT_API_KEY=your_crossmint_api_key
+# Crossmint Integration (required)
+CROSSMINT_API_KEY=sk_staging_...  # From Crossmint dashboard
 CROSSMINT_ENVIRONMENT=staging  # or production
-CROSSMINT_WALLET_ADDRESS=0x...  # Your treasury wallet
-CROSSMINT_WALLET_LOCATOR=your-wallet-locator
+CROSSMINT_WALLET_ADDRESS=0x...  # Your treasury wallet address
+CROSSMINT_WALLET_LOCATOR=email:user@domain.com:evm-smart-wallet
 
-# x402 Configuration
-CUSTOM_MIDDLEWARE_NETWORKS=ethereum-sepolia,base-sepolia,polygon-mumbai
-CUSTOM_MIDDLEWARE_CURRENCIES=usdc
+# Payment Configuration
+CUSTOM_MIDDLEWARE_NETWORKS=ethereum-sepolia,base-sepolia  # Supported chains
+CUSTOM_MIDDLEWARE_CURRENCIES=usdc  # Supported currencies
+ORDER_FEE_PERCENTAGE=0  # Additional fee (0% = no markup)
+ORDER_PAYMENT_TIMEOUT_MINUTES=10  # Payment validity window
 
-# Business Logic
-ORDER_FEE_PERCENTAGE=0          # Additional fee (0% = no markup)
-ORDER_PAYMENT_TIMEOUT_MINUTES=10 # How long payments stay valid
-
-# Server Basics
+# Server Configuration
 PORT=3000
 NODE_ENV=development
-DEBUG=false  # Set true when things break
+DEBUG=false  # Set true for detailed logging
 ```
 
-### Start the Server
+**How to get Crossmint credentials:**
+1. Sign up at [crossmint.com](https://crossmint.com)
+2. Create API key in dashboard 
+3. Set up treasury wallet (for receiving payments)
+4. Fund treasury wallet on your target networks
+
+### Verify Server Setup
 
 ```bash
-# Development with auto-reload
-npm run dev
+# Check server health
+curl http://localhost:3000/api/orders/facilitator/health
 
-# Production mode
-npm start
+# Should return status info including:
+# - Supported networks
+# - Supported currencies  
+# - Treasury wallet status
+
+# Test with environment validation
+pnpm start  # Will exit with clear error if env vars missing
 ```
 
-**That's it.** Your x402 facilitator is now ready to turn crypto signatures into Amazon orders.
+**Server startup logs should show:**
+```
+🔧 x402 Configuration Summary:
+   Networks: ethereum-sepolia, base-sepolia
+   Currencies: usdc
+
+✓ Server running on port 3000
+✓ Treasury wallet configured: 0x...
+✓ Ready to process x402 payments
+```
 
 ## The x402 Payment Dance
 
@@ -327,7 +354,7 @@ The beauty is that steps 6-8 happen automatically once the signature is valid.
 
 Enable detailed logging when things break:
 ```bash
-DEBUG=true npm run dev
+DEBUG=true pnpm dev
 ```
 
 This logs:
@@ -335,6 +362,40 @@ This logs:
 - EIP-3009 signature verification steps
 - Crossmint API requests/responses
 - Network RPC calls and responses
+
+### Common Server Issues
+
+**Server won't start - missing environment variables:**
+```bash
+# Server validates env vars on startup and shows specific missing variables
+pnpm start  # Will exit with clear error message
+
+# Verify .env file format
+cat .env | grep -v '^#' | grep '='
+```
+
+**Health check fails - Crossmint connection:**
+```bash
+# Test API key validity
+curl -H "X-API-Key: $CROSSMINT_API_KEY" \
+  https://staging.crossmint.com/api/2022-06-09/collections
+
+# Check environment setting
+echo "Environment: $CROSSMINT_ENVIRONMENT"
+```
+
+**Payment processing errors:**
+```bash
+# Enable debug mode for detailed payment flow logging
+DEBUG=true pnpm dev
+
+# Check treasury wallet funding
+# Verify wallet has sufficient USDC on configured networks
+
+# Validate network configuration
+echo "Networks: $CUSTOM_MIDDLEWARE_NETWORKS"
+echo "Currencies: $CUSTOM_MIDDLEWARE_CURRENCIES"
+```
 
 ## Security: The Non-Negotiable Parts
 

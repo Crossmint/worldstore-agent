@@ -45,37 +45,77 @@ The payment processor that makes crypto-to-Amazon actually work:
 - **Crossmint integration** for the actual Amazon fulfillment
 - **Custom x402 implementation** because the official one has... limitations
 
-## 5-Minute Setup (Actually 5 Minutes)
+## 15-Minute Setup (Honest Timing)
 
-Stop reading setup guides that lie about timing. This one actually works:
+Stop reading setup guides that lie about timing. Here's what actually works:
 
+### Prerequisites (5 minutes)
+- **Node.js 20+** (`node --version`)
+- **PNPM** (`npm install -g pnpm`)
+- **Anthropic API key** (get from console.anthropic.com)
+- **Crossmint account** (sign up at crossmint.com)
+- **SerpAPI key** (optional, for enhanced product search)
+
+### Installation (5 minutes)
 ```bash
-# The usual suspects
 git clone <your-repo-url>
 cd worldstore-agent
 pnpm install
 
-# Configure the secrets (see .env.template files for what you need)
+# Start Redis (highly recommended for production performance)
+docker run -d --name redis-stack -p 6379:6379 redis/redis-stack:latest
+```
+
+### Configuration (5 minutes)
+```bash
+# Copy environment templates
 cp agent/.env.template agent/.env
 cp server/.env.template server/.env
 
-# Optional: Redis for the full experience
-docker run -d --name redis-stack -p 6379:6379 redis/redis-stack:latest
+# Generate XMTP keys for the agent
+cd agent && pnpm gen:keys
 
-# Fire it up
-pnpm dev
+# Edit .env files with your API keys (see templates for details)
 ```
 
-**What you need before starting:**
-- Node.js 20+ (because life's too short for old Node)
-- PNPM (`npm install -g pnpm`)
-- Anthropic API key (for the AI magic)
-- Crossmint account (for the Amazon fulfillment)
-- XMTP wallet/key (for the messaging protocol)
+### Start Services
+```bash
+# Start both services with hot reload
+pnpm dev
+
+# Or start individually:
+pnpm dev:agent    # XMTP agent only
+pnpm dev:server   # Payment server only
+```
+
+### Verify Setup
+```bash
+# Check server health
+curl http://localhost:3000/api/orders/facilitator/health
+
+# Check Redis connection
+redis-cli ping  # Should return PONG
+
+# Agent will log XMTP connection details on startup
+```
+
+### Troubleshooting First Setup
+**Agent not connecting to XMTP:**
+- Check that `WALLET_KEY` and `ENCRYPTION_KEY` are set (run `pnpm gen:keys` if missing)
+- Verify XMTP environment setting (`dev` vs `production`)
+
+**Server health check fails:**
+- Ensure all Crossmint env vars are set correctly
+- Check that your Crossmint treasury wallet is funded
+- Verify network configurations match your target chains
+
+**Redis connection issues:**
+- Agent falls back to filesystem storage automatically
+- For production performance, ensure Redis Stack is running (not basic Redis)
 
 **What you don't need:**
 - A PhD in blockchain
-- 17 different RPC endpoints
+- 17 different RPC endpoints  
 - A Medium article to understand the architecture
 
 ## How Users Experience This
