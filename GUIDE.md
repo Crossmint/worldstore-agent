@@ -2,7 +2,7 @@
 
 **Build a production-ready crypto-commerce platform that enables Amazon purchases through AI-powered conversations using USDC payments.**
 
-In 90 minutes, you'll have a working system where users can chat with an AI agent to buy Amazon products using cryptocurrency. No wallets to connect, no gas fees, no complexityjust natural conversation that ends with packages at their door.
+Having followed this tutorial, you'll have a working system where users can chat with an AI agent to buy Amazon products using cryptocurrency.
 
 ## Table of Contents
 
@@ -25,7 +25,7 @@ The Worldstore Agent is a monorepo containing two symbiotic services that create
 ### The Big Picture
 
 ```
-User Message � XMTP Agent � AI Processing � Product Search � Order Creation � x402 Payment � Amazon Fulfillment
+User Message -> XMTP Agent -> AI Processing -> Product Search -> Order Creation -> x402 Payment -> Amazon Fulfillment
 ```
 
 But here's what actually happens under the hood:
@@ -33,22 +33,20 @@ But here's what actually happens under the hood:
 **XMTP Agent** (`/agent/`) - The conversational brain
 - **Core**: Claude Sonnet 4 powered shopping assistant
 - **Protocol**: XMTP for decentralized messaging
-- **Storage**: Redis for user profiles and conversation state  
+- **Storage**: Redis for user profiles (or any persisting storage)
 - **AI Framework**: LangGraph for complex conversation flows
 - **Wallet Generation**: Deterministic wallets for gasless payments
 
-**x402 Payment Server** (`/server/`) - The payment facilitator  
+**x402 Payment Server** (`/server/`) - The payment facilitator
 - **Protocol**: Custom x402 implementation for gasless transactions
 - **Integration**: Crossmint API for Amazon order placement
-- **Networks**: Multi-chain USDC support (Ethereum, Base, Polygon, Arbitrum)
-- **Smart Contracts**: Treasury management via Crossmint wallets
 
 ### What Makes This Special
 
 This isn't just another crypto payment processor. Three architectural decisions make it production-ready:
 
 1. **Gasless UX**: Users sign EIP-3009 permits instead of paying gas fees
-2. **Deterministic Wallets**: No wallet setupwallets derived from XMTP identity  
+2. **Deterministic Wallets**: No wallet setup
 3. **Natural Language**: Complex e-commerce through simple conversation
 
 ---
@@ -67,18 +65,18 @@ This isn't just another crypto payment processor. Three architectural decisions 
 You need five essential accounts before starting:
 
 1. **Anthropic API** - For Claude Sonnet 4 AI model
-2. **Crossmint Account** - For Amazon order fulfillment  
-3. **SerpAPI** - For Amazon product search (optional but recommended)
-4. **Redis Cloud** - Or local Redis instance
+2. **Crossmint Account** - For Amazon order fulfillment
+3. **SerpAPI** - For Amazon product search
+4. **Redis Cloud** - Or local Redis instance. You need a redis direct connection url either from local instance or cloud
 5. **Blockchain RPC Provider** - For wallet operations
 
 ### Quick Environment Check
 
 ```bash
 # Verify your system is ready
-node --version    # Should be 20+  
+node --version    # Should be 20+
 pnpm --version   # Should be 8+
-redis-cli ping   # Should return PONG
+redis-cli ping   # Should return PONG; only required if running redis-cli locally
 ```
 
 If any of these fail, fix them before continuing. The system won't work with missing dependencies.
@@ -91,9 +89,9 @@ If any of these fail, fix them before continuing. The system won't work with mis
 
 The agent is built around a central orchestration class with specialized helpers:
 
-**XMTPShoppingBot** - Main orchestrator
+**XMTPShoppingBot** ([`index.ts`](./agent/index.ts)) - Main orchestrator
 - Initializes all helper classes
-- Manages XMTP client lifecycle  
+- Manages XMTP client lifecycle
 - Routes messages to appropriate handlers
 - Coordinates agent responses
 
@@ -102,25 +100,49 @@ The agent is built around a central orchestration class with specialized helpers
 ```typescript
 // Core conversation processing
 ConversationProcessor  // Routes messages to correct AI agent
-UserStateManager      // Tracks user context and funding requirements
-ActionMenuFactory     // Creates interactive UI elements
+                      // -> agent/helpers/conversationProcessor.ts
 
-// Wallet & Payment Operations  
+UserStateManager      // Tracks user context and funding requirements
+                     // -> agent/helpers/userStateManager.ts
+
+ActionMenuFactory     // Creates interactive UI elements
+                     // -> agent/helpers/actionMenuFactory.ts
+
+// Wallet & Payment Operations
 WalletOperationsHandler // Manages balance checks and funding requests
+                       // -> agent/helpers/walletOperationsHandler.ts
+
 OrderToolWrapper       // Wraps order placement with payment logic
+                      // -> agent/helpers/orderToolWrapper.ts
 
 // XMTP Protocol Management
 XMTPClientFactory      // Handles client creation and message streaming
+                      // -> agent/helpers/xmtpClientFactory.ts
 ```
+
+**Direct File Links:**
+- [`ConversationProcessor`](./agent/helpers/conversationProcessor.ts)
+- [`UserStateManager`](./agent/helpers/userStateManager.ts)
+- [`ActionMenuFactory`](./agent/helpers/actionMenuFactory.ts)
+- [`WalletOperationsHandler`](./agent/helpers/walletOperationsHandler.ts)
+- [`OrderToolWrapper`](./agent/helpers/orderToolWrapper.ts)
+- [`XMTPClientFactory`](./agent/helpers/xmtpClientFactory.ts)
 
 **AI Agent System:**
 
 The system uses two specialized LangGraph agents:
 
-1. **Shopping Agent** - Natural product search and ordering
-2. **Profile Agent** - User profile management and preferences
+1. **Shopping Agent** ([`shopping/agent.ts`](./agent/lib/agents/shopping/agent.ts)) - Natural product search and ordering
+2. **Profile Agent** ([`profile/agent.ts`](./agent/lib/agents/profile/agent.ts)) - User profile management and preferences
 
 Each agent has custom tools, prompts, and conversation flows optimized for their domain.
+
+**Agent Tools:**
+- [`Order Tools`](./agent/lib/tools/order.ts) - Product search and order placement
+- [`Profile Tools`](./agent/lib/tools/profile.ts) - User profile management
+- [`Onchain Tools`](./agent/lib/tools/onchain.ts) - Wallet operations and balance checks
+
+> **Network Simplification:** While the payment server supports multiple networks, the XMTP agent is configured to work primarily with Base Sepolia and USDC on Base Sepolia for simplicity. This reduces complexity in wallet operations and balance checks while maintaining the core functionality. Additional networks can be added by extending the onchain tools and wallet configuration.
 
 ### x402 Payment Server Architecture
 
@@ -131,15 +153,44 @@ The payment server implements a custom x402 facilitator pattern:
 ```javascript
 // Server foundation
 server.js          // Express app with x402 middleware
+                  // -> server/src/server.js
+
 config/index.js    // Multi-network configuration management
+                  // -> server/src/config/index.js
 
 // Business logic
-routes/orders.js   // Order creation and status endpoints  
+routes/orders.js   // Order creation and status endpoints
+                  // -> server/src/routes/orders.js
+
 services/crossmint.js  // Amazon order placement via Crossmint
+                      // -> server/src/services/crossmint.js
 
 // Supporting infrastructure
 utils/logger.js    // Structured logging for debugging
+                  // -> server/src/utils/logger.js
 ```
+
+**Direct File Links:**
+- [`server.js`](./server/src/server.js) - Express app with x402 middleware
+- [`config/index.js`](./server/src/config/index.js) - Multi-network configuration
+- [`routes/orders.js`](./server/src/routes/orders.js) - Order endpoints
+- [`services/crossmint.js`](./server/src/services/crossmint.js) - Crossmint integration
+- [`utils/logger.js`](./server/src/utils/logger.js) - Logging utilities
+
+> **Network Configuration Note:** The payment server supports multi-network configuration for USDC across Ethereum, Base, Polygon, and Arbitrum testnets. However, the XMTP agent currently manages only Base Sepolia and USDC on Base Sepolia to keep the implementation simpler. This can be easily extended to support additional networks as needed.
+
+> **💡 Multi-Currency Payment Support**
+>
+> **Current limitation**: x402 protocol restricts payments to EIP-3009 tokens (USDC only). For multi-currency support, you'll need to bypass x402.
+>
+> **The details**:
+> - x402 enables gasless payments but only supports USDC
+> - Crossmint APIs are chain/token agnostic—they work with any token you throw at them
+> - To accept other tokens: remove the 402 server response code and let API calls go through directly
+>
+> **Implementation**: Skip the x402 middleware for multi-currency flows. Your users will handle gas fees, but you gain full token flexibility.
+>
+> **Need help with this setup?** [Contact our team](mailto:support@crossmint.io)—we've helped other developers implement multi-currency flows and can walk you through the specifics.
 
 **Payment Flow Design:**
 
@@ -188,7 +239,7 @@ sequenceDiagram
     Agent->>Redis: Store user profile
     Agent->>Agent: Generate deterministic wallet
     Agent->>Agent: Check USDC balance (multiple networks)
-    
+
     alt User has sufficient USDC
         Agent->>Server: POST /api/orders (no payment)
         Server-->>Agent: 402 Payment Required + details
@@ -227,12 +278,32 @@ sequenceDiagram
     XMTP->>User: "Out for delivery by 8 PM"
 ```
 
+
+***Yes, that sequence diagram looks like a distributed systems horror story at first glance—we get it. Nine different services for buying earbuds feels like overkill until you realize each one handles exactly one thing well, and the magic happens in the orchestration. The complexity is all hidden behind simple conversation, which is exactly the point.***
+
+
+
 ### Data Flow Between Services
 
-```
-XMTP Message � Agent Processing � Order Decision � Payment Server � Crossmint � Amazon
-     �              �                    �             �            �         �
-   Redis         Claude AI         Wallet Signature  x402 Protocol Treasury   Shipping
+```mermaid
+graph LR
+    A[XMTP Message] --> B[Agent Processing]
+    B --> C[Order Decision]
+    C --> D[Payment Server]
+    D --> E[Crossmint]
+    E --> F[Amazon]
+
+    G[Redis] -.-> B
+    H[Claude AI] -.-> B
+    I[Wallet Signature] -.-> D
+    J[x402 Protocol] -.-> D
+    K[Treasury] -.-> E
+    L[Shipping] -.-> F
+
+    style A fill:#e1f5fe
+    style F fill:#e8f5e8
+    style B fill:#fff3e0
+    style D fill:#fce4ec
 ```
 
 The beauty is in the orchestrationeach component handles its specialized role while maintaining the illusion of simple conversation.
@@ -323,7 +394,7 @@ Edit `server/.env` with your Crossmint configuration:
 # Crossmint Configuration - Get from Crossmint Console
 CROSSMINT_API_KEY=your_crossmint_api_key
 CROSSMINT_ENVIRONMENT=staging
-CROSSMINT_WALLET_ADDRESS=your_wallet_address  
+CROSSMINT_WALLET_ADDRESS=your_wallet_address
 CROSSMINT_WALLET_LOCATOR=your_wallet_locator
 
 # Order Configuration
@@ -347,9 +418,34 @@ DEBUG=false
 pnpm start
 
 # Should see:
-# =� x402 + Crossmint API Server started
-# =� Running on: http://localhost:3000
+# => x402 + Crossmint API Server started
+# => Running on: http://localhost:3000
 ```
+
+### Step 3.5: Docker Setup (If Using Docker for Redis)
+
+Before running Redis with Docker, ensure Docker Desktop is running:
+
+**Install Docker Desktop (if not already installed):**
+1. Download from [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop/)
+2. Install and launch Docker Desktop
+3. Wait for Docker to fully start (Docker icon should be stable in your menu bar)
+
+**Verify Docker is Running:**
+```bash
+# Check Docker version
+docker --version
+# Should return: Docker version 20.x.x or higher
+
+# Test Docker daemon
+docker info
+# Should return system information without errors
+```
+
+**Common Issues:**
+- **"Cannot connect to Docker daemon"** → Launch Docker Desktop and wait for it to start
+- **"Command not found: docker"** → Restart terminal after Docker Desktop installation
+- **Permission denied** → On Linux, add your user to the docker group: `sudo usermod -aG docker $USER`
 
 ### Step 4: Start Redis (If Running Locally)
 
@@ -393,8 +489,8 @@ curl http://localhost:3000/health
 # }
 
 # Check agent logs - should show:
-#  XMTP Shopping Bot initialized
-# =� Listening for messages...
+# XMTP Shopping Bot initialized
+# Listening for messages...
 ```
 
 Perfect! Both services are now running and ready to process orders.
@@ -411,7 +507,7 @@ Understanding the payment flow is crucial for debugging and extending the system
 
 ```
 1. User sends XMTP message
-2. Agent processes with Claude AI  
+2. Agent processes with Claude AI
 3. SerpAPI searches Amazon for products
 4. Agent presents options with prices
 5. User confirms selection
@@ -422,7 +518,7 @@ Understanding the payment flow is crucial for debugging and extending the system
 - SerpAPI returns Amazon product data (ASIN, price, reviews)
 - Agent formats response with product details and order button
 
-### Phase 2: Payment Preparation  
+### Phase 2: Payment Preparation
 
 **User Action:** Clicks "Buy Now" button
 
@@ -440,7 +536,17 @@ Understanding the payment flow is crucial for debugging and extending the system
 const userWallet = generateUserWallet(userInboxId, masterPrivateKey);
 // Same inbox ID always generates the same wallet
 // No seed phrases, no wallet apps, no complexity
+
+// Implementation:
+// -> agent/helpers/generateUserPrivateKey.ts
+// -> agent/helpers/getWalletClientForUser.ts
+// -> agent/helpers/wallet.ts (createUserWallet)
 ```
+
+**Implementation Details:**
+- [`generateUserPrivateKey.ts`](./agent/helpers/generateUserPrivateKey.ts) - Creates deterministic private keys using SHA256(masterKey + inboxId)
+- [`getWalletClientForUser.ts`](./agent/helpers/getWalletClientForUser.ts) - Main function that orchestrates wallet creation
+- [`wallet.ts`](./agent/helpers/wallet.ts) - Contains `createUserWallet` function for Viem wallet client creation
 
 ### Phase 3: x402 Payment Protocol
 
@@ -454,19 +560,71 @@ const userWallet = generateUserWallet(userInboxId, masterPrivateKey);
 5. Server validates signature and processes payment
 ```
 
+**Code Implementation:**
+
+**Agent Side (Order Processing):**
+- [`lib/tools/order.ts`](./agent/lib/tools/order.ts) - `order_product` tool that initiates the payment flow
+- [`helpers/orderToolWrapper.ts`](./agent/helpers/orderToolWrapper.ts) - Wraps order placement with payment logic
+- [`helpers/payment.ts`](./agent/helpers/payment.ts) - Core payment processing and x402 client implementation
+
+**Server Side (x402 Protocol):**
+- [`server/src/routes/orders.js`](./server/src/routes/orders.js) - POST /api/orders endpoint with 402 handling
+- [`server/src/server.js`](./server/src/server.js) - Express app with x402 middleware setup
+- [`server/src/services/crossmint.js`](./server/src/services/crossmint.js) - EIP-3009 permit validation and order placement
+- [`server/src/config/index.js`](./server/src/config/index.js) - x402 network and contract configuration
+
 **The gasless transaction:**
-```javascript
+```typescript
 // EIP-3009 permit - user signs intent to pay, no gas required
-const permit = {
-  owner: userWallet.address,
-  spender: treasuryWallet.address, 
-  value: orderTotal,
-  nonce: await getPermitNonce(userWallet.address),
-  deadline: Math.floor(Date.now() / 1000) + 3600
+const domain = {
+  name: "USDC",
+  version: "2",
+  chainId: 84532, // Base Sepolia
+  verifyingContract: paymentRequirements.asset as `0x${string}`,
 };
 
-const signature = await userWallet.signTypedData(permitDomain, permitTypes, permit);
+const types = {
+  TransferWithAuthorization: [
+    { name: "from", type: "address" },
+    { name: "to", type: "address" },
+    { name: "value", type: "uint256" },
+    { name: "validAfter", type: "uint256" },
+    { name: "validBefore", type: "uint256" },
+    { name: "nonce", type: "bytes32" },
+  ],
+};
+
+const authorization = {
+  from: userWallet.account.address,
+  to: paymentRequirements.payTo,
+  value: BigInt(paymentRequirements.maxAmountRequired),
+  validAfter: BigInt(0),
+  validBefore: BigInt(now + 3600), // 1 hour validity
+  nonce: `0x${randomBytes(32).toString("hex")}`, // Random nonce
+};
+
+const signature = await userWallet.signTypedData({
+  account: userWallet.account,
+  domain,
+  types,
+  primaryType: "TransferWithAuthorization",
+  message: authorization,
+});
 ```
+
+**Implementation Details:**
+
+**Agent Side (Signature Generation):**
+- [`helpers/payment.ts:94-167`](./agent/helpers/payment.ts#L94-L167) - Complete EIP-3009 signature generation
+  - Lines 94-99: EIP-712 domain setup for USDC contract
+  - Lines 102-111: TransferWithAuthorization type definitions
+  - Lines 113-124: Authorization message construction with nonce and validity
+  - Lines 161-167: Viem signTypedData call
+
+**Server Side (Signature Validation & Execution):**
+- [`services/crossmint.js:291-319`](./server/src/services/crossmint.js#L291-L319) - EIP-3009 execution via Crossmint
+  - Lines 300-314: Signature parsing and v-value normalization for USDC
+  - Lines 293-298: Authorization validation and logging
 
 ### Phase 4: Order Fulfillment
 
@@ -481,16 +639,44 @@ const signature = await userWallet.signTypedData(permitDomain, permitTypes, perm
 6. Agent notifies user of successful purchase
 ```
 
+**Code Implementation:**
+
+**Server Side (Order Processing & Fulfillment):**
+- [`server/src/routes/orders.js:129-142`](./server/src/routes/orders.js#L129-L142) - Crossmint order creation
+- [`server/src/routes/orders.js:234-289`](./server/src/routes/orders.js#L234-L289) - Payment verification and order fulfillment
+- [`server/src/routes/orders.js:274-328`](./server/src/routes/orders.js#L274-L328) - Order execution with error handling
+- [`server/src/services/crossmint.js:63-85`](./server/src/services/crossmint.js#L63-L85) - `createOrder()` method for Amazon orders
+- [`server/src/services/crossmint.js:291-400`](./server/src/services/crossmint.js#L291-L400) - `executeTransferWithAuthorization()` for EIP-3009
+
+**Agent Side (Order Confirmation):**
+- [`agent/lib/tools/order.ts:16-17`](./agent/lib/tools/order.ts#L16-L17) - `processPayment()` import and usage
+- [`agent/helpers/saveUserOrderId.ts`](./agent/helpers/saveUserOrderId.ts) - Store order ID for tracking
+
 ### Phase 5: Order Tracking
 
 **Ongoing:** User can check order status anytime
 
 ```
 1. User asks "Where's my order?"
-2. Agent calls: GET /api/orders/{orderId}/status  
+2. Agent calls: GET /api/orders/{orderId}/status
 3. Server queries Crossmint for latest status
 4. Agent reports shipping status to user
 ```
+
+**Code Implementation:**
+
+**Agent Side (Order Status Tools):**
+- [`agent/lib/tools/order.ts:196-226`](./agent/lib/tools/order.ts#L196-L226) - `order_status` tool implementation
+- [`agent/helpers/loadUserOrders.ts`](./agent/helpers/loadUserOrders.ts) - Load user's order history from Redis
+- [`agent/services/redis.ts:249-258`](./agent/services/redis.ts#L249-L258) - Redis order storage and retrieval
+
+**Server Side (Status Endpoints):**
+- [`server/src/routes/orders.js:350-400`](./server/src/routes/orders.js#L350-L400) - GET /api/orders/:orderId/status endpoint
+- [`server/src/services/crossmint.js:400-450`](./server/src/services/crossmint.js#L400-L450) - Crossmint order status queries
+
+**Agent Side (Status Display):**
+- [`agent/helpers/intentHandlers.ts`](./agent/helpers/intentHandlers.ts) - Handle "where's my order" intents
+- [`agent/lib/types.ts`](./agent/lib/types.ts) - Order status type definitions
 
 **What's brilliant about this flow:**
 
@@ -498,6 +684,19 @@ const signature = await userWallet.signTypedData(permitDomain, permitTypes, perm
 - **No wallet setup** - Wallets generated deterministically from XMTP identity
 - **No token switching** - Works with USDC across multiple networks
 - **No complexity** - User experience is just conversation
+
+> **💡 Multi-Currency Payment Support**
+>
+> **Current limitation**: x402 protocol restricts payments to EIP-3009 tokens (USDC only). For multi-currency support, you'll need to bypass x402.
+>
+> **The details**:
+> - x402 enables gasless payments but only supports USDC
+> - Crossmint APIs are chain/token agnostic—they work with any token you throw at them
+> - To accept other tokens: remove the 402 server response code and let API calls go through directly
+>
+> **Implementation**: Skip the x402 middleware for multi-currency flows. Your users will handle gas fees, but you gain full token flexibility.
+>
+> **Need help with this setup?** [Contact our team](mailto:support@crossmint.io)—we've helped other developers implement multi-currency flows and can walk you through the specifics.
 
 ---
 
@@ -513,15 +712,15 @@ Let's follow Sarah, a crypto newcomer, through her first purchase:
 ```
 I found some solid workout earbuds for you! Here are the top picks:
 
-<� AirPods Pro (2nd Gen) - $179
+1. AirPods Pro (2nd Gen) - $179
    - Sweat/water resistant, great noise canceling
    - 30hr battery life, secure fit
-   P 4.5/5 (50K reviews)
+   - Rating 4.5/5 (50K reviews)
 
-<� Beats Fit Pro - $149  
+2. Beats Fit Pro - $149
    - Specifically designed for workouts
    - Secure-fit wingtips, 24hr battery
-   P 4.4/5 (15K reviews)
+   - Rating 4.4/5 (15K reviews)
 
 Which one looks good? I can get either shipped to you.
 ```
@@ -543,10 +742,10 @@ Great choice! The AirPods Pro are fantastic for workouts.
 
 I'll need a few details to ship these to you:
 
-=� Quick Setup:
-" Full Name: 
-" Email:
-" Shipping Address:
+=> Quick Setup:
+1 Full Name:
+2 Email:
+3 Shipping Address:
 
 Just tell me and I'll get your profile set up.
 ```
@@ -555,12 +754,12 @@ Just tell me and I'll get your profile set up.
 
 **Agent Response:**
 ```
-Perfect! Profile created 
+Perfect! Profile created!
 
-=� Order Summary:
-" AirPods Pro (2nd Gen) - $179
-" Shipping: FREE
-" Total: $179 USDC
+=> Order Summary:
+- AirPods Pro (2nd Gen) - $179
+- Shipping: FREE
+- Total: $179 USDC
 
 Ready to complete your order?
 ```
@@ -577,54 +776,73 @@ Ready to complete your order?
 
 **Agent Response:**
 ```
-= Checking your payment options...
+Checking your payment options...
 
-I found your wallet! But you need $179 USDC to complete this order.
+Perfect! I found $200 USDC in your wallet on Base.
 
-=� Fund Your Purchase:
-You can send USDC to any of these addresses:
+=> Payment Request:
+I'm sending you a transaction to approve for $179 USDC.
 
-" Ethereum: 0xabc123... (your wallet)
-" Base: 0xabc123... (same wallet, Base network)
-" Polygon: 0xabc123... (same wallet, Polygon network)
+[Transaction Request Sent]
+- Amount: 179 USDC
+- To: Treasury Wallet (0x789...)
+- Network: Base Sepolia
+- Purpose: AirPods Pro (2nd Gen) Purchase
 
-Once you send USDC, I'll automatically complete your order!
+Please approve this transaction in your wallet to complete your order.
 ```
 
 **What's happening:**
 1. Agent generated Sarah's deterministic wallet
 2. Checked USDC balance across all supported networks
-3. Wallet is empty (first purchase), so requested funding
-4. Same wallet address works on all networks (deterministic generation)
+3. Found sufficient funds ($200 USDC on Base)
+4. Sent XMTP transaction request using wallet_sendCalls codec
+5. User receives an interactive transaction approval in their XMTP client
 
-### Funding and Completion
+**Sarah's XMTP Client displays:**
+```
+🔔 Transaction Request from Worldstore Agent
 
-**Sarah:** Sends $200 USDC to her wallet address on Base
+💰 Transfer 179 USDC on Base
+To: 0x789...def (Treasury Wallet)
+Purpose: AirPods Pro (2nd Gen) Purchase
+
+[Approve] [Reject]
+```
+
+### Transaction Approval and Completion
+
+**Sarah:** Clicks "Approve" on the transaction request in her XMTP client
 
 **Agent Response (automatic):**
 ```
-=� Payment received! $200 USDC detected on Base.
+=> Payment received! $200 USDC detected on Base.
 
-=� Completing your order...
+=> Completing your order...
 
- Order confirmed! 
+-> Order confirmed!
 
-=� Order Details:
-" Order ID: CM_789abc
-" AirPods Pro (2nd Gen) - $179
-" Shipping: 2-3 business days  
-" Tracking will be sent to sarah@email.com
-
-Your remaining balance: $21 USDC
+=> Order Details:
+- Order ID: CM_789abc
+- AirPods Pro (2nd Gen) - $179
+- Shipping: 2-3 business days
+- Tracking will be sent to sarah@email.com
 ```
 
 **The seamless magic:**
-1. Agent detected incoming USDC transaction
-2. Generated EIP-3009 permit signature (no gas fees!)
-3. Called x402 server with signed payment
-4. Server validated signature and called Crossmint
-5. Crossmint executed permit and placed Amazon order
-6. All happens in under 30 seconds
+1. User approved XMTP transaction request with one click
+2. Agent received approval and initiated payment flow
+3. Generated EIP-3009 permit signature (no gas fees!)
+4. Called x402 server with signed payment
+5. Server validated signature and called Crossmint
+6. Crossmint executed permit and placed Amazon order
+7. All happens in under 30 seconds after approval
+
+**Technical Implementation:**
+- XMTP `wallet_sendCalls` codec sends transaction request ([docs](https://docs.xmtp.org/inboxes/content-types/transactions#send-a-transaction-request))
+- User approves via XMTP client UI (one-click approval)
+- Agent receives approval event and processes payment
+- EIP-3009 permit allows gasless USDC transfer
 
 ### Post-Purchase Experience
 
@@ -632,9 +850,9 @@ Your remaining balance: $21 USDC
 
 **Agent Response:**
 ```
-=� Your AirPods Pro order:
+=> Your AirPods Pro order:
 
-Status: Out for Delivery! =�
+Status: Out for Delivery! =>
 Tracking: 1Z999AA123456789
 Expected: Today by 8 PM
 
@@ -651,10 +869,10 @@ Need anything else?
 ```
 Glad you love them! Here are some solid cases:
 
-=� Apple MagSafe Case - $49
+=> Apple MagSafe Case - $49
    - Perfect fit, wireless charging compatible
-   
-=� Spigen Tough Armor - $24
+
+=> Spigen Tough Armor - $24
    - Drop protection, more budget-friendly
 
 Want me to add one to your next order?
@@ -685,10 +903,23 @@ CROSSMINT_API_KEY=...
 
 Use proper secrets management:
 - **Railway/Vercel**: Environment variables in dashboard
-- **AWS**: Parameter Store or Secrets Manager  
+- **AWS**: Parameter Store or Secrets Manager
 - **Kubernetes**: Sealed secrets or external-secrets-operator
 
 **Wallet Security:**
+
+**Recommended: Crossmint Smart Wallets**
+For production deployments, consider using Crossmint Smart Wallets instead of managing private keys directly:
+- **No private key management** - Crossmint handles wallet creation and security
+- **Built-in gasless transactions** - Users don't need ETH for gas fees
+- **Multi-chain support** - Works across Ethereum, Base, Polygon, Arbitrum
+- **Email-based wallets** - Users can create wallets with just an email address
+- **Enterprise-grade security** - Professional key management and custody
+
+**Learn more:**
+- [Crossmint Smart Wallets Overview](https://docs.crossmint.com/wallets/overview)
+
+**If using deterministic wallets (current approach):**
 - Master wallet private key should be generated offline
 - Use hardware security modules (HSM) for production keys
 - Implement key rotation for XMTP encryption keys
@@ -727,7 +958,7 @@ Current system uses Redis for everything. For production scale, consider:
 - Average order value
 - User retention rate
 
-// Technical metrics  
+// Technical metrics
 - XMTP message processing latency
 - Redis response times
 - Payment server error rates
@@ -813,7 +1044,7 @@ node -e "console.log(process.env.WALLET_KEY.length)"
 # Should be: 66 (including 0x prefix)
 
 # Validate encryption key
-node -e "console.log(process.env.ENCRYPTION_KEY.length)" 
+node -e "console.log(process.env.ENCRYPTION_KEY.length)"
 # Should be: 64 (32 bytes in hex)
 
 # Test XMTP connection
@@ -922,53 +1153,8 @@ console.log('Base Sepolia USDC:', config.x402.getContractAddress('base-sepolia')
 # Check block explorer for contract address
 ```
 
-### Debugging Techniques
-
-**Conversation Flow Debugging:**
-```bash
-# Enable detailed agent logging
-DEBUG_AGENT=true pnpm dev:agent
-
-# Monitor conversation state in Redis
-redis-cli get "user:conversation:USER_INBOX_ID"
-```
-
-**Payment Flow Debugging:**
-```bash
-# Test x402 flow manually
-curl -X POST http://localhost:3000/api/orders \
-  -H "Content-Type: application/json" \
-  -d '{
-    "asin": "B0BDHWDR12",
-    "email": "test@example.com", 
-    "physicalAddress": {
-      "name": "Test User",
-      "line1": "123 Test St",
-      "city": "Test City",
-      "state": "CA",
-      "postalCode": "90210",
-      "country": "US"
-    }
-  }'
-
-# Should return 402 with payment details
-```
-
-**Performance Profiling:**
-```bash
-# Monitor service resource usage
-top -p $(pgrep -f "tsx index.ts")
-
-# Profile Redis performance
-redis-cli --latency-history -i 1
-
-# Check XMTP message processing times
-grep "message_processed" agent/logs/*.log | awk '{print $NF}' | sort -n
-```
-
----
-
-## Extension Opportunities
+<details>
+<summary><h2>🚀 Extension Opportunities</h2></summary>
 
 ### Enhanced AI Capabilities
 
@@ -1004,6 +1190,19 @@ interface SubscriptionOrder {
 - DeFi yield integration for spare balances
 - Cross-chain payment routing optimization
 
+> **💡 Multi-Currency Payment Support**
+>
+> **Current limitation**: x402 protocol restricts payments to EIP-3009 tokens (USDC only). For multi-currency support, you'll need to bypass x402.
+>
+> **The details**:
+> - x402 enables gasless payments but only supports USDC
+> - Crossmint APIs are chain/token agnostic—they work with any token you throw at them
+> - To accept other tokens: remove the 402 server response code and let API calls go through directly
+>
+> **Implementation**: Skip the x402 middleware for multi-currency flows. Your users will handle gas fees, but you gain full token flexibility.
+>
+> **Need help with this setup?** [Contact our team](mailto:support@crossmint.io)—we've helped other developers implement multi-currency flows and can walk you through the specifics.
+
 **Payment Splitting:**
 - Group purchases with friends
 - Corporate expense management
@@ -1012,15 +1211,7 @@ interface SubscriptionOrder {
 
 ### Platform Integrations
 
-**Beyond Amazon:**
-The architecture is designed for extensibility. Add support for:
-- Shopify stores
-- Etsy marketplace  
-- eBay auctions
-- Local delivery services (DoorDash, Instacart)
-
 **Social Commerce:**
-- Share purchases with friends via XMTP groups
 - Collaborative wishlists
 - Social proof in product recommendations
 - Influencer affiliate integration
@@ -1098,16 +1289,18 @@ interface WorldstorePlugin {
 }
 ```
 
+</details>
+
 ---
 
 ## Conclusion
 
-You've just built something remarkable: a production-ready system that turns natural conversation into Amazon deliveries using cryptocurrency. The Worldstore Agent combines cutting-edge AI, decentralized messaging, and modern payment protocols into an experience that feels like magic to users.
+You've just built something remarkable: a production-ready system that turns natural conversation into Amazon deliveries using cryptocurrency. Made possible through Crossmint's worldstore APIs, the XMTP messaging protocol and Coinbase's 402 protocol.
 
 ### What You've Accomplished
 
 - **Deployed a dual-service architecture** that scales independently
-- **Integrated five different APIs** into a cohesive user experience  
+- **Integrated five different APIs** into a cohesive user experience
 - **Implemented gasless crypto payments** using EIP-3009 permits
 - **Built conversational AI** that actually completes e-commerce transactions
 - **Created deterministic wallets** that eliminate user onboarding friction
@@ -1124,27 +1317,14 @@ This system represents the future of crypto-commerce: invisible complexity, maxi
 3. Set up staging and production environments
 4. Add comprehensive test coverage
 
-**Medium-Term Expansions:**  
-1. Support additional marketplaces beyond Amazon  
-2. Add subscription and recurring payment features
-3. Build mobile app with XMTP SDK integration
-4. Implement advanced personalization with ML
-
-**Long-Term Vision:**
-1. Create multi-tenant SaaS platform
-2. Build plugin ecosystem for third-party developers
-3. Add advanced DeFi integrations and yield generation
-4. Expand internationally with regional compliance
-
 ### Community & Support
 
-This guide represents hundreds of hours of research, development, and testing. The patterns and practices here are battle-tested and ready for production use.
+This guide represents hours of research, development, and testing. Made with ♥️ by the Crossmint team.
 
 **Contributing Back:**
 - Found improvements or bug fixes? Submit PRs
-- Built interesting extensions? Share them with the community
+- Built interesting extensions? [Share them with the community](https://t.me/crossmintdevs)
 - Discovered better practices? Update this documentation
-- Having issues? Check the troubleshooting guide first
 
 ### Final Thought
 
@@ -1152,8 +1332,8 @@ The intersection of AI, crypto, and e-commerce is just beginning. You've built a
 
 Keep building. Keep pushing the boundaries. The future of commerce is conversational, crypto-native, and completely seamless.
 
-Now go ship something amazing.
+Now go ship something amazing. 🚢🚢🚢‼️
 
 ---
 
-*Built with d by the Worldstore team. For questions, issues, or contributions, reach out through the repository or join our community.*
+*Built with ♥️ by the [Crossmint](https://crossmint.com) team. For questions, issues, or contributions, reach out through the repository or [join our community](https://t.me/crossmintdevs).*
