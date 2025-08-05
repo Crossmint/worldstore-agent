@@ -2,59 +2,13 @@
 
 > **The AI shopping assistant that speaks crypto.** Natural language Amazon orders, USDC payments, zero blockchain headaches.
 
-This is the conversational brain of the Worldstore system - an XMTP agent that transforms "I need headphones" into Amazon packages at your door. It's Claude Sonnet 4 with a shopping addiction and a deterministic wallet.
+This is the conversational brain of the Worldstore system
 
-## What Makes This Different
-
-Most crypto shopping bots are essentially command-line interfaces with extra steps. This one actually converses like a human who happens to be really good at finding products and processing payments.
-
-**Before (typical crypto commerce):**
-```
-> /search headphones
-> /select item_id_7284729 
-> /checkout
-> *15 MetaMask popups later*
-```
-
-**After (this agent):**
-```
-User: "Need good wireless headphones under $150"
-Agent: "Found Sony WH-1000XM4 for $129.99. Great noise cancellation, 
-       30-hour battery. Want to order them?"
-User: "Perfect, send to my usual address"
-Agent: *quietly handles everything*
-```
-
-The difference? This agent remembers you're a human, not a API endpoint.
-
-## Core Capabilities
-
-### Conversations That Don't Suck
-- **Natural language processing** powered by Claude Sonnet 4
-- **Context awareness** across message threads
-- **Profile memory** so you don't repeat your address 47 times
-- **Interactive action buttons** for mobile-friendly experiences
-- **Slash commands** for power users who want shortcuts
-
-### Payments That Actually Work
-- **Deterministic wallets** generated per user (no seed phrase management)
-- **Gasless USDC payments** via EIP-3009 signatures
-- **Multi-network support** (Base, Ethereum, Polygon, Arbitrum)
-- **Balance checking** with helpful funding prompts
-- **Smart funding requests** with action buttons instead of immediate wallet popups
-
-### Storage That Scales
-- **Redis integration** for production performance
-- **Automatic migration** from filesystem to Redis
-- **Graceful fallback** when Redis is unavailable
-- **JSON search capabilities** for complex user queries
-- **TTL management** for conversation caching
-
-## 10-Minute Setup
+## Setup
 
 ### Prerequisites
 - **Node.js 20+** (`node --version`)
-- **PNPM** (`npm install -g pnpm`)  
+- **PNPM** (`npm install -g pnpm`)
 - **Anthropic API key** (console.anthropic.com)
 - **SerpAPI key** (optional, for product search)
 - **Running x402 server** (see `/server` directory)
@@ -80,12 +34,12 @@ WALLET_KEY=0x1234abcd...  # Private key for XMTP client
 ENCRYPTION_KEY=your-32-byte-hex-key  # Encryption key for XMTP
 XMTP_ENV=dev  # or production
 
-# Backend Integration  
+# Backend Integration
 WORLDSTORE_API_URL=http://localhost:3000  # Your x402 server
 
 # User Wallet Management
 WALLET_PRIVATE_KEY=0x...  # For generating user deterministic wallets
-RPC_PROVIDER_URL=https://ethereum-sepolia.publicnode.com
+RPC_PROVIDER_URL=https://...
 
 # Redis (recommended for production)
 REDIS_URL=redis://localhost:6379
@@ -129,84 +83,25 @@ redis-cli ping  # Should return PONG
 - Migrates existing user data if upgrading storage
 - Starts processing incoming messages
 
-## Redis: The Performance Upgrade
-
-Redis isn't required, but it transforms this from "pretty good" to "production ready." Here's why you want it:
-
-### Performance Benefits
-- **Sub-millisecond user profile lookups** instead of filesystem reads
-- **Atomic operations** preventing race conditions during orders
-- **JSON search capabilities** for complex user data queries
-- **Conversation caching** with automatic TTL expiration
-- **Horizontal scaling** when you need to handle more users
-
-### Storage Architecture
-
-```
-Redis Key Structure:
-├── user:{inboxId}                    # User profiles (JSON docs)
-├── xmtp:{clientKey}:{data}          # XMTP protocol data
-├── conversation:{inboxId}           # Cached state (1h TTL)
-└── activity:{inboxId}:{date}        # Analytics data (7d TTL)
-```
-
-### Redis Setup Options
-
-**Option 1: Docker (Recommended)**
-```bash
-# Full Redis Stack with JSON and search modules
-docker run -d --name redis-stack -p 6379:6379 redis/redis-stack:latest
-
-# Verify it's working
-redis-cli ping  # Should return PONG
-```
-
-**Option 2: Local Installation**
-```bash
-# macOS
-brew install redis
-brew services start redis
-
-# Ubuntu/Debian  
-sudo apt update && sudo apt install redis-server
-sudo systemctl start redis-server
-```
-
-**Important:** For full functionality (JSON documents, search indexes), you need Redis Stack. Basic Redis will work but with limited features.
-
-### Migration & Fallback
-
-The agent handles data migration automatically:
-
-```bash
-# Manual migration (if needed)
-pnpm run migrate
-
-# Rollback to filesystem
-pnpm run migrate:rollback
-```
-
-If Redis goes down, the agent gracefully falls back to filesystem storage. Your users won't notice, but you'll want to fix Redis for performance reasons.
-
 ## User Interaction Patterns
 
 ### Profile Setup (First Time Users)
 ```
-Agent: "Hi! I'm your crypto shopping assistant. To get started, 
+Agent: "Hi! I'm your crypto shopping assistant. To get started,
        I'll need your name, email, and shipping address."
-       
+
 User: "John Doe, john@example.com, 123 Main St, NYC"
 
-Agent: "Perfect! Profile saved. Now you can shop with just 
+Agent: "Perfect! Profile saved. Now you can shop with just
        'order headphones' or 'find a laptop under $1000'"
 ```
 
-### Natural Language Shopping  
+### Natural Language Shopping
 ```
 User: "I need a wireless mouse for gaming"
 
-Agent: "Found Logitech G Pro X Superlight for $149.99. 
-       25,600 DPI, 63g weight, great for competitive gaming. 
+Agent: "Found Logitech G Pro X Superlight for $149.99.
+       25,600 DPI, 63g weight, great for competitive gaming.
        Order it?"
 
 User: "Yes"
@@ -216,9 +111,9 @@ Agent: *checks USDC balance, processes payment*
 
 ### Funding Flow (When Balance is Low)
 ```
-Agent: "You need $89.99 USDC but only have $23.45. 
+Agent: "You need $89.99 USDC but only have $23.45.
        What would you like to do?"
-       
+
 [💸 Add Funds Now] [❌ Cancel Order] [💰 Check Balance]
 
 User: *taps "Add Funds Now"*
@@ -228,10 +123,9 @@ Agent: *sends wallet request for $66.54 USDC*
 
 ### Slash Commands for Power Users
 - `/clear` - Reset conversation context (fresh start)
-- `/menu` - Show main action menu with buttons  
+- `/menu` - Show main action menu with buttons
 - `/help` - Display help and available commands
-- `/profile` - View/edit your profile information
-- `/orders` - View order history and tracking
+- `/delete` - delete self profile
 
 ## Technical Architecture
 
@@ -241,7 +135,7 @@ LangGraph Agent
 ├── Profile Management Tools
 │   ├── edit_profile()
 │   └── read_profile()
-├── Shopping Tools  
+├── Shopping Tools
 │   ├── search_product()
 │   └── order_product()
 ├── Order Management Tools
@@ -262,42 +156,6 @@ LangGraph Agent
 6. **Fulfillment**: Server processes payment and places Amazon order
 7. **Confirmation**: User gets order ID and tracking info
 
-### Deterministic Wallets
-
-Each user gets a deterministic wallet derived from their XMTP identity:
-- **No seed phrase management** required
-- **Consistent addresses** across sessions
-- **Automatic wallet creation** on first interaction
-- **Secure key derivation** using XMTP client keys
-
-## Production Considerations
-
-### Error Handling That Doesn't Suck
-- **Graceful degradation** when external services fail
-- **Informative error messages** users can actually understand
-- **Automatic retries** for transient failures
-- **Fallback behaviors** when primary systems are down
-
-### Logging for Humans
-```bash
-# Enable detailed logging
-DEBUG_AGENT=true pnpm dev
-```
-
-Logs include:
-- User interaction patterns
-- Payment flow debugging
-- Redis/filesystem operations
-- XMTP protocol events
-- Error traces with context
-
-### Security Boundaries
-- **API key management** with environment isolation
-- **Wallet isolation** per user with deterministic generation  
-- **Payment authorization** through cryptographic signatures
-- **Input validation** on all user-provided data
-
-## Advanced Features
 
 ### Interactive Action Buttons
 
@@ -314,89 +172,6 @@ const insufficientFundsResponse = {
   ]
 }
 ```
-
-### Conversation Context Management
-
-The `/clear` command provides users control over conversation history:
-- **Resets agent context** while preserving XMTP message history
-- **Clears funding requirements** and profile menu states
-- **Enables fresh starts** without losing user data
-- **Maintains user profiles** and order history
-
-### Multi-Network Payment Support
-
-Automatically selects optimal payment network based on:
-- **User preference** (if specified)
-- **Current gas fees** across networks
-- **USDC availability** in user wallet
-- **Network reliability** and confirmation times
-
-## Troubleshooting
-
-### Common Setup Issues
-
-**Missing XMTP keys error:**
-```bash
-# Solution: Generate keys first
-pnpm gen:keys
-
-# Then copy output to your .env file
-```
-
-**Agent not connecting to XMTP:**
-```bash
-# Check environment variables are set
-echo $WALLET_KEY $ENCRYPTION_KEY $XMTP_ENV
-
-# Verify keys are valid hex strings
-# WALLET_KEY should start with 0x (64 chars)
-# ENCRYPTION_KEY should be 64 hex chars
-```
-
-**Redis connection failures:**
-```bash
-# Test Redis connectivity
-redis-cli ping  # Should return PONG
-
-# Check Redis container status
-docker ps | grep redis
-
-# Check Redis logs
-docker logs redis-stack
-```
-
-**Agent responds but can't process orders:**
-```bash
-# Verify x402 server is running
-curl http://localhost:3000/api/orders/facilitator/health
-
-# Check server environment vars are set
-echo $WORLDSTORE_API_URL
-
-# Ensure agent can reach server
-curl $WORLDSTORE_API_URL/api/orders/facilitator/health
-```
-
-**Product search not working:**
-```bash
-# Check if SerpAPI key is set (optional but recommended)
-echo $SERPAPI_API_KEY
-
-# Verify API key is valid at serpapi.com
-```
-
-### Debug Mode
-
-Enable comprehensive logging:
-```bash
-DEBUG_AGENT=true pnpm dev
-```
-
-This provides detailed insights into:
-- Message processing flow
-- AI agent decision making
-- Payment signature generation
-- Redis operations and fallbacks
 
 ## Development Workflow
 
@@ -417,7 +192,6 @@ pnpm type:check
 pnpm lint
 ```
 
-## Network Support
 
 The agent works across multiple networks for maximum user flexibility:
 
