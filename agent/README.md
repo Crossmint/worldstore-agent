@@ -191,18 +191,3 @@ pnpm type:check
 # Lint and format
 pnpm lint
 ```
-
-
-The agent works across multiple networks for maximum user flexibility:
-
-| Network | USDC Contract | Status |
-|---------|---------------|---------|
-| **Base Mainnet** | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` | ✅ Production |
-| **Base Sepolia** | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` | ✅ Testnet |
-| **Ethereum** | `0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48` | ✅ Production |
-| **Polygon** | `0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359` | ✅ Production |
-| **Arbitrum** | `0xaf88d065e77c8cC2239327C5EDb3A432268e5831` | ✅ Production |
-
-Users can specify network preference or let the agent choose the optimal one based on fees and availability.
-
-This agent transforms crypto shopping from a technical exercise into a natural conversation. Your users will forget they're using blockchain technology, which is exactly the point.
