@@ -1,12 +1,14 @@
 # Worldstore Agent
 
-> **Buy Amazon products with crypto through AI-powered conversations.** Zero gas fees, natural language interface, real shipping.
+> **Buy Amazon products with onchain payments through AI-powered conversations.** Gasless transactions, natural language interface, real shipping.
 
-Welcome to the future of crypto-commerce
+Built on Base, powered by Crossmint.
+
+Welcome to the future of onchain commerce
 
 ## What It Does
 
-Your users chat with an AI agent like they're texting a friend. The agent searches Amazon, handles payments in USDC (gasless, because nobody has time for gas fees), and ships real products to real addresses. It's the "shut up and take my crypto" experience developers have been trying to build for years.
+Users interact with an AI agent through natural conversation to purchase real-world products using onchain payments. The agent handles Amazon searches, processes gasless USDC payments on Base, and manages shipping to real addresses. This creates an intuitive that makes onchain payments as simple as sending a text message.
 
 ```
 User: "I need wireless headphones under $100"
@@ -16,7 +18,7 @@ Agent: *generates USDC payment signature, processes order*
 User: *receives Amazon package in 2 days*
 ```
 
-No MetaMask popups. No gas fees. No blockchain complexity.
+Gasless transactions with an intuitive interface that abstracts onchain complexity
 
 ## Architecture: The Good Parts
 
@@ -32,24 +34,24 @@ worldstore-agent/
 
 ### The XMTP Agent (`/agent`)
 The AI that handles everything users see:
-- **Claude Sonnet 4** for conversations that don't suck
-- **Redis** for speed (falls back to filesystem when Redis has a bad day)
+- **Claude Sonnet 4** for natural conversations
+- **Redis** for speed (with filesystem fallback for reliability)
 - **Deterministic wallets** so each user gets their own payment identity
-- **Profile management** because nobody wants to type their address 500 times
+- **Profile management** for streamlined user experience
 - **Interactive buttons** for when tapping is easier than typing
 
 ### The x402 Server (`/server`)
-The payment processor that makes crypto-to-Amazon actually work:
+The payment processor that makes crypto-to-Amazon payments work:
 - **EIP-3009 signatures** for gasless USDC payments
-- **Multi-network support** (Ethereum, Base, Polygon, Arbitrum)
+- **Multi-network support** with Base as the primary network (also supports Ethereum, Polygon, Arbitrum)
 - **Crossmint integration** for the actual Amazon fulfillment
-- **Custom x402 implementation** because the official one has... limitations
+- **Custom x402 implementation** optimized for commerce use cases
 
 ## Setup
 
 > **Base Wallet Integration Note**
 >
-> This XMTP bot is optimized for Coinbase's Base Wallet, leveraging two specialized content types that enhance the chat experience:
+> This XMTP bot is optimized for Base Wallet, leveraging two specialized content types that enhance the chat experience:
 >
 > - **Quick Actions codec**: Enables interactive buttons and commands within chat
 > - **Intent codec**: Handles transaction intents and wallet interactions
@@ -122,10 +124,8 @@ redis-cli ping  # Should return PONG
 - Agent falls back to filesystem storage automatically
 - For production performance, ensure Redis Stack is running (not basic Redis)
 
-**What you don't need:**
-- A PhD in blockchain
-- 17 different RPC endpoints
-- A Medium article to understand the architecture
+**What makes this simple:**
+The system is designed for simplicity, requiring minimal blockchain knowledge and straightforward configuration.
 
 ## How Users Experience This
 
@@ -136,7 +136,7 @@ redis-cli ping  # Should return PONG
 5. **Fulfillment**: Order goes to Amazon via Crossmint, tracking info gets shared
 6. **Delivery**: Real package arrives at real address
 
-The entire flow feels like messaging a really competent personal shopper who happens to accept crypto.
+The entire flow feels like messaging a really competent personal shopper who accepts onchain payments.
 
 ## The Technical Reality
 
@@ -156,7 +156,7 @@ The entire flow feels like messaging a really competent personal shopper who hap
 > **Need help with this setup?** [Contact our team](mailto:support@crossmint.io)—we've helped other developers implement multi-currency flows and can walk you through the specifics.
 
 - **Multi-network** so users aren't stuck on expensive chains
-> **Network Simplification:** While the payment server supports multiple networks, the XMTP agent is configured to work primarily with Base Sepolia and USDC on Base Sepolia for simplicity. This reduces complexity in wallet operations and balance checks while maintaining the core functionality. Additional networks can be added by extending the onchain tools and wallet configuration.
+> **Network Simplification:** While the payment server supports multiple networks, the XMTP agent is configured to work primarily with Base, leveraging Base's low-cost infrastructure for USDC transactions. This reduces complexity in wallet operations and balance checks while maintaining the core functionality. Additional networks can be added by extending the onchain tools and wallet configuration.
 - **Deterministic wallets** generated per user for seamless UX
 - **Balance checking** with funding requests when needed
 
@@ -171,7 +171,7 @@ The entire flow feels like messaging a really competent personal shopper who hap
 
 ### Storage That Scales
 - **Redis** for production performance with JSON search
-- **Filesystem fallback** when Redis is having an off day
+- **Filesystem fallback** when Redis is unavailable
 - **Automatic migration** from filesystem to Redis
 - **User profiles, order history, conversation state** all handled seamlessly
 
@@ -192,7 +192,7 @@ pnpm start:server   # Server in production mode
 # The usual dev tools
 pnpm build         # Build everything
 pnpm lint          # Fix your code style
-pnpm type:check    # TypeScript won't save you from everything
+pnpm type:check    # TypeScript validation
 pnpm clean         # Start fresh
 ```
 
@@ -211,5 +211,4 @@ pnpm clean         # Start fresh
 Each service has its own detailed README with the nitty-gritty details:
 - **[`/agent/README.md`](/agent/README.md)** - XMTP agent setup, Redis configuration, and workflow details
 - **[`/server/README.md`](/server/README.md)** - x402 protocol implementation and payment processing
-
-Go build something that matters. 🚢🚢🚢‼️
+- 
