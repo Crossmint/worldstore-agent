@@ -1,6 +1,6 @@
 # x402 Facilitator Server
 
-A custom x402 payment facilitator that enables gasless onchain payments
+A custom x402 payment facilitator that enables gasless onchain payments for [XMTP](https://docs.xmtp.org/) messaging applications
 
 ## What It Solves
 

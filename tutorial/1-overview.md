@@ -1,20 +1,26 @@
-# Worldstore Agent: Complete Systems Tutorial
+# Build your own Worldstore Agent
 
 **Build a production-ready crypto-commerce platform that enables Amazon purchases through AI-powered conversations using USDC payments.**
 
 Having followed this tutorial, you'll have a working system where users can chat with an AI agent to buy Amazon products using cryptocurrency.
+
+## Tutorial Navigation
+
+**Complete Tutorial Series:**
+1. **[System Overview](./1-overview.md)** (this file) - Architecture and components
+2. **[Quick Deployment](./2-deployment.md)** - Get up and running with the agent
+3. **[Production Guide](./3-production.md)** - Security, scaling, and compliance
+4. **[Troubleshooting](./4-troubleshooting.md)** - Debug common issues
+5. **[Extensions](./5-extensions.md)** - Advanced features and enhancements
 
 ## Table of Contents
 
 1. [System Architecture Overview](#system-architecture-overview)
 2. [Prerequisites & Environment Setup](#prerequisites--environment-setup)
 3. [Component Deep Dive](#component-deep-dive)
-4. [Step-by-Step Deployment](#step-by-step-deployment)
 5. [Payment Flow End-to-End](#payment-flow-end-to-end)
 6. [User Experience Walkthrough](#user-experience-walkthrough)
-7. [Production Considerations](#production-considerations)
-8. [Troubleshooting Guide](#troubleshooting-guide)
-9. [Extension Opportunities](#-extension-opportunities) *(toggle)*
+7. [What's Next](#whats-next)
 
 ---
 
@@ -32,7 +38,7 @@ But here's what actually happens under the hood:
 
 **XMTP Agent** (`/agent/`) - The conversational brain
 - **Core**: Claude Sonnet 4 powered shopping assistant
-- **Protocol**: XMTP for decentralized messaging
+- **Protocol**: [XMTP](https://docs.xmtp.org/) for decentralized messaging
 - **Storage**: Redis for user profiles (or any persisting storage)
 - **AI Framework**: LangGraph for complex conversation flows
 - **Wallet Generation**: Deterministic wallets for gasless payments
@@ -82,14 +88,14 @@ redis-cli ping   # Should return PONG; only required if running redis-cli locall
 If any of these fail, fix them before continuing. The system won't work with missing dependencies.
 
 > **Base Wallet Integration Note**
-> 
+>
 > This XMTP bot is optimized for Coinbase's Base Wallet, leveraging two specialized content types that enhance the chat experience:
-> 
+>
 > - **Quick Actions codec**: Enables interactive buttons and commands within chat
 > - **Intent codec**: Handles transaction intents and wallet interactions
-> 
+>
 > While your bot works with any XMTP client, Base Wallet users get the full interactive experience with these enhanced message types.
-> 
+>
 > **Learn more**: Complete codec documentation and implementation examples at [Base App Chat Agents Guide](https://docs.base.org/base-app/guides/chat-agents#base-app-content-types)
 
 ---
@@ -201,7 +207,7 @@ utils/logger.js    // Structured logging for debugging
 >
 > **Implementation**: Skip the x402 middleware for multi-currency flows. Your users will handle gas fees, but you gain full token flexibility.
 >
-> **Need help with this setup?** [Contact our team](mailto:support@crossmint.io)—we've helped other developers implement multi-currency flows and can walk you through the specifics.
+> **Need help with this setup?** [Contact our team](https://t.me/crossmintdevs)—we've helped other developers implement multi-currency flows and can walk you through the specifics.
 
 **Payment Flow Design:**
 
@@ -321,203 +327,17 @@ The beauty is in the orchestrationeach component handles its specialized role w
 
 ---
 
-## Step-by-Step Deployment
-
-### Step 1: Clone and Setup Workspace
-
-```bash
-# Get the code
-git clone <repository-url>
-cd worldstore-agent
-
-# Install dependencies for both services
-pnpm install
-
-# Verify workspace structure
-ls -la
-# You should see: agent/ server/ package.json pnpm-workspace.yaml
-```
-
-### Step 2: Configure the XMTP Agent
-
-First, let's set up the conversational AI component:
-
-```bash
-cd agent
-cp .env.template .env
-```
-
-Edit `agent/.env` with your configuration:
-
-```bash
-# AI Configuration - Get from Anthropic Console
-ANTHROPIC_API_KEY=sk-ant-your-key-here
-
-# Generate XMTP keys (we'll do this next)
-WALLET_KEY=0x1234abcd...
-ENCRYPTION_KEY=your-32-byte-hex-encryption-key
-XMTP_ENV=dev
-
-# Backend Integration
-WORLDSTORE_API_URL=http://localhost:3000
-
-# Product Search - Get from SerpAPI
-SERPAPI_API_KEY=your-serpapi-key
-
-# Wallet Generation - Use any Ethereum private key
-WALLET_PRIVATE_KEY=0x...
-RPC_PROVIDER_URL=https://ethereum-sepolia.publicnode.com
-
-# Redis - Use Redis Cloud or local instance
-REDIS_URL=redis://localhost:6379
-```
-
-**Generate XMTP Keys:**
-
-```bash
-# Generate wallet and encryption keys
-pnpm gen:keys
-
-# This creates keys and shows you the values to add to .env
-# Copy the output into your .env file
-```
-
-**Verify Agent Configuration:**
-
-```bash
-# Test the agent setup
-pnpm type:check
-# Should complete without errors
-```
-
-### Step 3: Configure the Payment Server
-
-Navigate to the server directory:
-
-```bash
-cd ../server
-cp .env.template .env
-```
-
-Edit `server/.env` with your Crossmint configuration:
-
-```bash
-# Crossmint Configuration - Get from Crossmint Console
-CROSSMINT_API_KEY=your_crossmint_api_key
-CROSSMINT_ENVIRONMENT=staging
-CROSSMINT_WALLET_ADDRESS=your_wallet_address
-CROSSMINT_WALLET_LOCATOR=your_wallet_locator
-
-# Order Configuration
-ORDER_FEE_PERCENTAGE=0
-ORDER_PAYMENT_TIMEOUT_MINUTES=10
-
-# Network Support - Customize based on your needs
-CUSTOM_MIDDLEWARE_NETWORKS=ethereum-sepolia,base-sepolia,polygon-mumbai,arbitrum-sepolia
-CUSTOM_MIDDLEWARE_CURRENCIES=usdc
-
-# Server Configuration
-PORT=3000
-NODE_ENV=development
-DEBUG=false
-```
-
-**Verify Server Configuration:**
-
-```bash
-# Test server startup
-pnpm start
-
-# Should see:
-# => x402 + Crossmint API Server started
-# => Running on: http://localhost:3000
-```
-
-### Step 3.5: Docker Setup (If Using Docker for Redis)
-
-Before running Redis with Docker, ensure Docker Desktop is running:
-
-**Install Docker Desktop (if not already installed):**
-1. Download from [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop/)
-2. Install and launch Docker Desktop
-3. Wait for Docker to fully start (Docker icon should be stable in your menu bar)
-
-**Verify Docker is Running:**
-```bash
-# Check Docker version
-docker --version
-# Should return: Docker version 20.x.x or higher
-
-# Test Docker daemon
-docker info
-# Should return system information without errors
-```
-
-**Common Issues:**
-- **"Cannot connect to Docker daemon"** → Launch Docker Desktop and wait for it to start
-- **"Command not found: docker"** → Restart terminal after Docker Desktop installation
-- **Permission denied** → On Linux, add your user to the docker group: `sudo usermod -aG docker $USER`
-
-### Step 4: Start Redis (If Running Locally)
-
-```bash
-# Option 1: Docker (Recommended)
-docker run -d --name worldstore-redis -p 6379:6379 redis/redis-stack:latest
-
-# Option 2: Local installation
-redis-server
-
-# Test Redis connection
-redis-cli ping
-# Should return: PONG
-```
-
-### Step 5: Launch Both Services
-
-In your root directory:
-
-```bash
-# Start both services in development mode
-pnpm dev
-
-# This runs:
-# - Agent on XMTP protocol (no HTTP port)
-# - Server on http://localhost:3000
-```
-
-**Verify Everything is Running:**
-
-```bash
-# Check server health
-curl http://localhost:3000/health
-
-# Should return:
-# {
-#   "status": "healthy",
-#   "timestamp": "2024-01-20T10:30:00.000Z",
-#   "version": "1.0.0",
-#   "environment": "development"
-# }
-
-# Check agent logs - should show:
-# XMTP Shopping Bot initialized
-# Listening for messages...
-```
-
-Perfect! Both services are now running and ready to process orders.
-
----
 
 ## Payment Flow End-to-End
 
 Understanding the payment flow is crucial for debugging and extending the system. Here's what happens when a user wants to buy something:
 
-### Phase 1: Order Initiation
+### Step 1: Order Initiation
 
 **User Action:** "I want to buy AirPods Pro"
 
 ```
-1. User sends XMTP message
+1. User sends [XMTP](https://docs.xmtp.org/) message
 2. Agent processes with Claude AI
 3. SerpAPI searches Amazon for products
 4. Agent presents options with prices
@@ -529,7 +349,7 @@ Understanding the payment flow is crucial for debugging and extending the system
 - SerpAPI returns Amazon product data (ASIN, price, reviews)
 - Agent formats response with product details and order button
 
-### Phase 2: Payment Preparation
+### Step 2: Payment Preparation
 
 **User Action:** Clicks "Buy Now" button
 
@@ -559,7 +379,7 @@ const userWallet = generateUserWallet(userInboxId, masterPrivateKey);
 - [`getWalletClientForUser.ts`](./agent/helpers/getWalletClientForUser.ts) - Main function that orchestrates wallet creation
 - [`wallet.ts`](./agent/helpers/wallet.ts) - Contains `createUserWallet` function for Viem wallet client creation
 
-### Phase 3: x402 Payment Protocol
+### Step 3: x402 Payment Protocol
 
 **Agent Action:** Places order with payment server
 
@@ -637,7 +457,7 @@ const signature = await userWallet.signTypedData({
   - Lines 300-314: Signature parsing and v-value normalization for USDC
   - Lines 293-298: Authorization validation and logging
 
-### Phase 4: Order Fulfillment
+### Step 4: Order Fulfillment
 
 **Server Action:** Processes payment and places Amazon order
 
@@ -663,7 +483,7 @@ const signature = await userWallet.signTypedData({
 - [`agent/lib/tools/order.ts:16-17`](./agent/lib/tools/order.ts#L16-L17) - `processPayment()` import and usage
 - [`agent/helpers/saveUserOrderId.ts`](./agent/helpers/saveUserOrderId.ts) - Store order ID for tracking
 
-### Phase 5: Order Tracking
+### Step 5: Order Tracking
 
 **Ongoing:** User can check order status anytime
 
@@ -689,7 +509,7 @@ const signature = await userWallet.signTypedData({
 - [`agent/helpers/intentHandlers.ts`](./agent/helpers/intentHandlers.ts) - Handle "where's my order" intents
 - [`agent/lib/types.ts`](./agent/lib/types.ts) - Order status type definitions
 
-**What's brilliant about this flow:**
+**What's great about this flow:**
 
 - **No gas fees** - Users only sign permits, treasury pays gas
 - **No wallet setup** - Wallets generated deterministically from XMTP identity
@@ -707,7 +527,7 @@ const signature = await userWallet.signTypedData({
 >
 > **Implementation**: Skip the x402 middleware for multi-currency flows. Your users will handle gas fees, but you gain full token flexibility.
 >
-> **Need help with this setup?** [Contact our team](mailto:support@crossmint.io)—we've helped other developers implement multi-currency flows and can walk you through the specifics.
+> **Need help with this setup?** [Contact our team](https://t.me/crossmintdevs)—we've helped other developers implement multi-currency flows and can walk you through the specifics.
 
 ---
 
@@ -897,454 +717,13 @@ Want me to add one to your next order?
 
 ---
 
-## Production Considerations
+## What's Next
 
-### Security & Key Management
+Now that you understand the system architecture, choose your path:
 
-**Critical security practices for production deployment:**
-
-**Environment Variable Security:**
-```bash
-# NEVER commit these to version control
-ANTHROPIC_API_KEY=sk-ant-...
-WALLET_KEY=0x...
-ENCRYPTION_KEY=...
-CROSSMINT_API_KEY=...
-```
-
-Use proper secrets management:
-- **Railway/Vercel**: Environment variables in dashboard
-- **AWS**: Parameter Store or Secrets Manager
-- **Kubernetes**: Sealed secrets or external-secrets-operator
-
-**Wallet Security:**
-
-**Recommended: Crossmint Smart Wallets**
-For production deployments, consider using Crossmint Smart Wallets instead of managing private keys directly:
-- **No private key management** - Crossmint handles wallet creation and security
-- **Built-in gasless transactions** - Users don't need ETH for gas fees
-- **Multi-chain support** - Works across Ethereum, Base, Polygon, Arbitrum
-- **Email-based wallets** - Users can create wallets with just an email address
-- **Enterprise-grade security** - Professional key management and custody
-
-**Learn more:**
-- [Crossmint Smart Wallets Overview](https://docs.crossmint.com/wallets/overview)
-
-**If using deterministic wallets (current approach):**
-- Master wallet private key should be generated offline
-- Use hardware security modules (HSM) for production keys
-- Implement key rotation for XMTP encryption keys
-- Monitor wallet balances and set up alerts
-
-### Scalability Architecture
-
-**Redis Scaling:**
-```bash
-# Production Redis setup
-REDIS_URL=rediss://username:password@redis-cluster-endpoint:6380
-
-# Enable Redis clustering for high availability
-REDIS_CLUSTER_NODES=redis1:6379,redis2:6379,redis3:6379
-```
-
-**Load Balancing:**
-- XMTP agent: Scale horizontally with shared Redis state
-- Payment server: Stateless, can run multiple instances behind load balancer
-- Redis: Use Redis Cluster or managed service (Redis Cloud, AWS ElastiCache)
-
-**Database Considerations:**
-Current system uses Redis for everything. For production scale, consider:
-- PostgreSQL for order history and user profiles
-- Redis for session state and conversation context
-- Separate read replicas for analytics queries
-
-### Monitoring & Observability
-
-**Essential Metrics to Track:**
-
-```javascript
-// Business metrics
-- Orders per minute
-- Conversion rate (messages to orders)
-- Average order value
-- User retention rate
-
-// Technical metrics
-- XMTP message processing latency
-- Redis response times
-- Payment server error rates
-- Anthropic API latency and token usage
-
-// Infrastructure metrics
-- CPU/Memory usage across services
-- Network latency between services
-- Redis memory usage and hit rates
-```
-
-**Logging Strategy:**
-```javascript
-// Structured logging with correlation IDs
-logger.info('Order processing started', {
-  userInboxId: 'user123',
-  orderId: 'CM_789abc',
-  orderValue: 179.00,
-  paymentNetwork: 'base',
-  correlationId: 'req_abc123'
-});
-```
-
-**Error Handling & Alerting:**
-- Set up alerts for payment failures
-- Monitor XMTP connection health
-- Track unusual user behavior patterns
-- Alert on API rate limit approaches
-
-### Performance Optimization
-
-**Agent Performance:**
-- Implement conversation context caching
-- Use connection pooling for Redis
-- Batch XMTP message processing where possible
-- Optimize AI prompts to reduce token usage
-
-**Payment Server Performance:**
-- Cache Crossmint order status responses
-- Implement request deduplication
-- Use database connection pooling
-- Add response compression
-
-**Network Optimization:**
-- Deploy services in same region/VPC
-- Use CDN for static assets
-- Implement proper caching headers
-- Monitor cross-service network latency
-
-### Compliance & Legal
-
-**Financial Regulations:**
-- Implement KYC/AML procedures for large orders
-- Report suspicious transaction patterns
-- Maintain audit trails for all payments
-- Consider money transmission licensing requirements
-
-**Data Privacy:**
-- Implement GDPR/CCPA compliance for user data
-- Encrypt user profiles and conversation history
-- Provide data export and deletion capabilities
-- Regular security audits and penetration testing
-
-**Platform Policies:**
-- Ensure compliance with Amazon's terms of service
-- Monitor for prohibited items and categories
-- Implement age verification for restricted products
-- Handle returns and refunds according to platform policies
+- **Ready to deploy**: Start with [Quick Deployment Guide](./2-deployment.md) - get your system up and running.
+- **Production Planning**: Review [Production Considerations](./3-production.md) for security, scaling, and compliance.
+- **Debug**: Check [Troubleshooting Guide](./4-troubleshooting.md) for common issues and solutions.
+- **Advanced features**: Explore [Extension Opportunities](./5-extensions.md) for enhancements and integrations.
 
 ---
-
-## Troubleshooting Guide
-
-### Common Issues & Solutions
-
-#### XMTP Agent Won't Start
-
-**Symptom:** Agent fails to initialize with wallet errors
-
-```bash
-# Check wallet key format
-node -e "console.log(process.env.WALLET_KEY.length)"
-# Should be: 66 (including 0x prefix)
-
-# Validate encryption key
-node -e "console.log(process.env.ENCRYPTION_KEY.length)"
-# Should be: 64 (32 bytes in hex)
-
-# Test XMTP connection
-curl -X POST https://dev.xmtp.network/health
-# Should return healthy status
-```
-
-**Solution:**
-```bash
-# Regenerate keys if invalid
-pnpm gen:keys
-
-# Copy new values to .env file
-# Restart agent service
-```
-
-#### Redis Connection Failures
-
-**Symptom:** User profiles not saving, conversation state lost
-
-```bash
-# Test Redis connectivity
-redis-cli ping
-# Should return: PONG
-
-# Check Redis logs
-redis-cli monitor
-# Watch for connection attempts
-
-# Test Redis from agent
-node -e "
-const Redis = require('ioredis');
-const redis = new Redis(process.env.REDIS_URL);
-redis.ping().then(console.log).catch(console.error);
-"
-```
-
-**Solution:**
-```bash
-# Fix Redis URL format
-REDIS_URL=redis://localhost:6379  # Local
-REDIS_URL=rediss://user:pass@host:port  # Remote with SSL
-
-# Ensure Redis has enough memory
-redis-cli config get maxmemory
-redis-cli config set maxmemory 1gb
-```
-
-#### Payment Server 402 Errors
-
-**Symptom:** Orders fail with "Payment Required" but no payment details
-
-```bash
-# Check Crossmint configuration
-curl -H "X-API-Key: $CROSSMINT_API_KEY" \
-  https://staging.crossmint.com/api/v1-alpha2/wallets/$CROSSMINT_WALLET_LOCATOR
-
-# Should return wallet details
-```
-
-**Common Crossmint Issues:**
-```bash
-# Wrong environment
-CROSSMINT_ENVIRONMENT=staging  # or production
-
-# Invalid wallet locator format
-CROSSMINT_WALLET_LOCATOR=email:your-email@domain.com:polygon
-
-# Missing API permissions
-# Check Crossmint dashboard for API key permissions
-```
-
-#### Claude AI Token Limits
-
-**Symptom:** Agent responses become slow or fail with rate limits
-
-```bash
-# Monitor token usage
-grep "tokens" agent/logs/*.log | tail -20
-
-# Check API key limits
-curl -H "x-api-key: $ANTHROPIC_API_KEY" \
-  https://api.anthropic.com/v1/messages \
-  -d '{"max_tokens":1,"messages":[{"role":"user","content":"hi"}],"model":"claude-sonnet-4-20250514"}'
-```
-
-**Solutions:**
-- Upgrade Anthropic API plan for higher limits
-- Implement conversation context trimming
-- Cache common responses to reduce API calls
-- Use shorter, more focused prompts
-
-#### Network-Specific Payment Issues
-
-**Symptom:** Payments work on some networks but not others
-
-```bash
-# Check USDC contract addresses
-node -e "
-const config = require('./server/src/config');
-console.log('Ethereum Sepolia USDC:', config.x402.getContractAddress('ethereum-sepolia'));
-console.log('Base Sepolia USDC:', config.x402.getContractAddress('base-sepolia'));
-"
-
-# Verify user has USDC on the correct network
-# Check block explorer for contract address
-```
-
-<details>
-<summary><h2>🚀 Extension Opportunities</h2></summary>
-
-### Enhanced AI Capabilities
-
-**Multi-Product Comparisons:**
-Current system handles one product at a time. Add tools for:
-- Side-by-side product comparisons
-- Bundle recommendations ("Customers also bought...")
-- Price tracking and alerts
-- Review sentiment analysis
-
-**Personalized Shopping:**
-- Machine learning for recommendation engines
-- Purchase history analysis
-- Seasonal and trend-based suggestions
-- Budget tracking and spending insights
-
-### Advanced Payment Features
-
-**Subscription Management:**
-```typescript
-// Add recurring payment support
-interface SubscriptionOrder {
-  frequency: 'weekly' | 'monthly' | 'quarterly';
-  maxAmount: number;
-  autoRenew: boolean;
-  products: ProductSubscription[];
-}
-```
-
-**Multi-Currency Support:**
-- ETH, BTC, and other cryptocurrency payments
-- Stablecoin conversion (USDT, DAI, FRAX)
-- DeFi yield integration for spare balances
-- Cross-chain payment routing optimization
-
-> **💡 Multi-Currency Payment Support**
->
-> **Current limitation**: x402 protocol restricts payments to EIP-3009 tokens (USDC only). For multi-currency support, you'll need to bypass x402.
->
-> **The details**:
-> - x402 enables gasless payments but only supports USDC
-> - Crossmint APIs are chain/token agnostic—they work with any token you throw at them
-> - To accept other tokens: remove the 402 server response code and let API calls go through directly
->
-> **Implementation**: Skip the x402 middleware for multi-currency flows. Your users will handle gas fees, but you gain full token flexibility.
->
-> **Need help with this setup?** [Contact our team](mailto:support@crossmint.io)—we've helped other developers implement multi-currency flows and can walk you through the specifics.
-
-**Payment Splitting:**
-- Group purchases with friends
-- Corporate expense management
-- Family account hierarchies
-- Gift card and credit integration
-
-### Platform Integrations
-
-**Social Commerce:**
-- Collaborative wishlists
-- Social proof in product recommendations
-- Influencer affiliate integration
-
-### Enterprise Features
-
-**Business Account Management:**
-```typescript
-interface BusinessProfile extends UserProfile {
-  companyName: string;
-  taxId: string;
-  purchaseOrderLimits: {
-    daily: number;
-    monthly: number;
-    requiresApproval: number;
-  };
-  approvers: string[]; // Inbox IDs
-}
-```
-
-**Advanced Analytics:**
-- Purchase pattern analysis
-- Cost center allocation
-- Vendor management
-- Compliance reporting
-
-### Technical Enhancements
-
-**Blockchain Integration:**
-- NFT product certificates
-- Loyalty token rewards
-- Proof of purchase on-chain
-- Supply chain transparency
-
-**Performance Scaling:**
-```typescript
-// Message queue for order processing
-interface OrderQueue {
-  addOrder(order: OrderRequest): Promise<string>;
-  processOrders(): Promise<void>;
-  getOrderStatus(orderId: string): Promise<OrderStatus>;
-}
-
-// Caching layer for frequent queries
-interface ProductCache {
-  searchProducts(query: string): Promise<Product[]>;
-  getProductDetails(asin: string): Promise<ProductDetails>;
-  invalidateCache(pattern: string): Promise<void>;
-}
-```
-
-**Advanced Security:**
-- Multi-signature treasury management
-- Hardware security module integration
-- Zero-knowledge proof implementations
-- Biometric authentication for high-value orders
-
-### Integration Ecosystem
-
-**API Marketplace:**
-Build a platform where developers can add:
-- Custom product catalogs
-- Specialized AI agents
-- Alternative payment methods
-- Regional shipping providers
-
-**Plugin Architecture:**
-```typescript
-interface WorldstorePlugin {
-  name: string;
-  version: string;
-  endpoints: PluginEndpoint[];
-  tools: PluginTool[];
-  middlewares: PluginMiddleware[];
-}
-```
-
-</details>
-
----
-
-## Conclusion
-
-You've just built something remarkable: a production-ready system that turns natural conversation into Amazon deliveries using cryptocurrency. Made possible through Crossmint's worldstore APIs, the XMTP messaging protocol and Coinbase's 402 protocol.
-
-### What You've Accomplished
-
-- **Deployed a dual-service architecture** that scales independently
-- **Integrated five different APIs** into a cohesive user experience
-- **Implemented gasless crypto payments** using EIP-3009 permits
-- **Built conversational AI** that actually completes e-commerce transactions
-- **Created deterministic wallets** that eliminate user onboarding friction
-
-### The Bigger Picture
-
-This system represents the future of crypto-commerce: invisible complexity, maximum utility. Users don't need to understand blockchain, manage private keys, or calculate gas fees. They just talk to an AI and receive packages.
-
-### Your Next Steps
-
-**Immediate Improvements:**
-1. Add comprehensive monitoring and alerting
-2. Implement proper CI/CD pipelines
-3. Set up staging and production environments
-4. Add comprehensive test coverage
-
-### Community & Support
-
-This guide represents hours of research, development, and testing. Made with ♥️ by the Crossmint team.
-
-**Contributing Back:**
-- Found improvements or bug fixes? Submit PRs
-- Built interesting extensions? [Share them with the community](https://t.me/crossmintdevs)
-- Discovered better practices? Update this documentation
-
-### Final Thought
-
-The intersection of AI, crypto, and e-commerce is just beginning. You've built a system at the forefront of this convergence. What users buy through natural conversation today will seem primitive compared to what's possible tomorrow.
-
-Keep building. Keep pushing the boundaries. The future of commerce is conversational, crypto-native, and completely seamless.
-
-Now go ship something amazing. 🚢🚢🚢‼️
-
----
-
-*Built with ♥️ by the [Crossmint](https://crossmint.com) team. For questions, issues, or contributions, reach out through the repository or [join our community](https://t.me/crossmintdevs).*
