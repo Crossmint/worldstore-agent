@@ -1,12 +1,10 @@
-# X402 Facilitator Server
+# x402 Facilitator Server
 
-> **The payment processor that makes "pay with crypto" actually work.** Turn USDC signatures into Amazon deliveries without the blockchain headaches.
+This is where the magic happens - a custom x402 payment facilitator
 
-This is where the magic happens - a custom x402 payment facilitator that bridges the gap between XMTP conversations and real-world commerce. It's the financial plumbing that turns cryptographic signatures into packages at your door.
+## What It Solves
 
-## What This Solves
-
-Ever tried to pay for something online with crypto? It usually goes like this:
+The usual payment flow
 1. Connect wallet (3 clicks)
 2. Approve spending (transaction + gas)
 3. Wait for confirmation (30 seconds of anxiety)
@@ -17,32 +15,46 @@ Ever tried to pay for something online with crypto? It usually goes like this:
 
 ## How x402 Actually Works
 
-The x402 protocol is brilliantly simple:
+The x402 protocol is quite simple:
 1. **Client requests payment** → Server responds with 402 Payment Required
 2. **Client signs authorization** → No blockchain interaction, just a signature
 3. **Client retries with signature** → Server executes payment and fulfills order
 
-Think of it as "crypto layaway" - users authorize payments that get executed later when needed.
+> **💡 Multi-Currency Payment Support**
+>
+> **Current limitation**: x402 protocol restricts payments to EIP-3009 tokens (USDC only). For multi-currency support, you'll need to bypass x402.
+>
+> **The details**:
+> - x402 enables gasless payments but only supports USDC
+> - Crossmint APIs are chain/token agnostic—they work with any token you throw at them
+> - To accept other tokens: remove the 402 server response code and let API calls go through directly
+>
+> **Implementation**: Skip the x402 middleware for multi-currency flows. Your users will handle gas fees, but you gain full token flexibility.
+>
+> **Need help with this setup?** [Contact our team](mailto:support@crossmint.io)—we've helped other developers implement multi-currency flows and can walk you through the specifics.
 
 ```
 Traditional Crypto Payment:          x402 Payment:
+
 User → MetaMask popup                User → Sign once (gasless)
 User → Approve transaction           Server → Execute when ready
-User → Pay transaction              Server → Fulfill order
-User → Wait for confirmations       User → Get product
-User → Hope it works                
+User → Pay transaction               Server → Fulfill order
+User → Wait for confirmations        User → Get product
+User → Hope it works
 ```
 
 ## Why Build a Custom Facilitator?
 
-The official x402 facilitator works great... if you only care about Base. For everyone else building real applications, we needed:
+The official x402 facilitator works great but only with Base and USDC. The custom facilitator allows the following features:
 
 - **Multi-network support** (Ethereum, Polygon, Arbitrum, not just Base)
 - **Direct e-commerce integration** (Crossmint → Amazon)
 - **Flexible fee structures** (because business models matter)
 - **Production-ready error handling** (because things break)
 
-## Architecture That Makes Sense
+> **Network Simplification:** While the payment server supports multiple networks, the XMTP agent is configured to work primarily with Base Sepolia and USDC on Base Sepolia for simplicity. This reduces complexity in wallet operations and balance checks while maintaining the core functionality. Additional networks can be added by extending the onchain tools and wallet configuration.
+
+## Architecture
 
 ```
 src/
@@ -54,7 +66,7 @@ src/
 
 Clean, boring, and maintainable. Just how payment processing should be.
 
-## 5-Minute Server Setup
+## Server Setup
 
 ### Prerequisites
 - **Node.js 20+** (`node --version`)
@@ -102,7 +114,7 @@ DEBUG=false  # Set true for detailed logging
 
 **How to get Crossmint credentials:**
 1. Sign up at [crossmint.com](https://crossmint.com)
-2. Create API key in dashboard 
+2. Create API key in dashboard
 3. Set up treasury wallet (for receiving payments)
 4. Fund treasury wallet on your target networks
 
@@ -114,7 +126,7 @@ curl http://localhost:3000/api/orders/facilitator/health
 
 # Should return status info including:
 # - Supported networks
-# - Supported currencies  
+# - Supported currencies
 # - Treasury wallet status
 
 # Test with environment validation
@@ -139,10 +151,10 @@ This is a two-step protocol that feels like one seamless flow:
 ### Step 1: Payment Requirements (402 Response)
 Client asks to buy something, server responds with "Payment Required" and tells them exactly what to sign.
 
-### Step 2: Payment Execution  
+### Step 2: Payment Execution
 Client comes back with a signature, server executes the payment and fulfills the order.
 
-That's it. No gas fees, no wallet connections, no blockchain anxiety.
+That's it!
 
 ## API Reference: The Important Parts
 
@@ -153,7 +165,7 @@ The API accepts flexible product references:
 ```
 Amazon Products:
 - amazon:B08N5WRWNW                                    # Direct ASIN
-- amazon:https://www.amazon.com/dp/B01DFKC2SO         # Full URL
+- amazon:https://www.amazon.com/dp/B01DFKC2SO          # Full URL
 
 Shopify Products (future):
 - shopify:https://store.com/products/item:variant-id   # Product + variant
@@ -250,38 +262,18 @@ X-PAYMENT: eyJ4NDAyVmVyc2lvbiI6MSwic2NoZW1lIjoi...  # Base64 payload
 }
 ```
 
-### Health Check (Because Monitoring Matters)
+### Health Check
 
 **GET** `/api/orders/facilitator/health`
 
 Returns server status and network connectivity. Use this for monitoring.
 
-## Network Support: The Reality
-
-We support the networks that actually matter for commerce:
-
-### Testnets (For Development)
-| Network | USDC Contract | Why Use It |
-|---------|---------------|------------|
-| **Ethereum Sepolia** | `0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238` | Most compatible |
-| **Base Sepolia** | `0x036cbd53842c5426634e7929541ec2318f3dcf7e` | Fastest/cheapest |
-| **Polygon Mumbai** | `0xe6b8a5CF854791412c1f6EFC7CAf629f5Df1c747` | Alternative option |
-| **Arbitrum Sepolia** | `0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d` | L2 testing |
-
-### Production Networks (For Real Money)
-| Network | USDC Contract | Why Use It |
-|---------|---------------|------------|
-| **Ethereum** | `0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48` | Most liquidity |
-| **Base** | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` | Cheapest fees |
-| **Polygon** | `0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359` | Alternative L2 |
-| **Arbitrum** | `0xaf88d065e77c8cC2239327C5EDb3A432268e5831` | Another L2 option |
-
-## Treasury Wallet: The Critical Piece
+## Treasury Wallet
 
 Your Crossmint treasury wallet is the financial engine of this system:
 
 ### What It Does
-- **Receives user USDC payments** via transferWithAuthorization
+- **Receives user USDC payments** via `transferWithAuthorization`
 - **Pays for Amazon orders** through Crossmint
 - **Handles the float** between payment and fulfillment
 
@@ -290,18 +282,9 @@ Your Crossmint treasury wallet is the financial engine of this system:
 - **Monitor balances** - orders fail when wallets are empty
 - **Secure the credentials** - this wallet handles real money
 
-### Funding Strategy
-```bash
-# Example funding levels (adjust for your volume)
-Ethereum: 10,000 USDC   # High-value orders
-Base:      5,000 USDC   # Main volume
-Polygon:   2,000 USDC   # Backup network
-Arbitrum:  2,000 USDC   # Secondary L2
-```
-
 ## Payment Flow Deep Dive
 
-Here's what actually happens when someone buys something:
+Here's what happens when someone buys something:
 
 1. **Order Request** → XMTP agent sends order details
 2. **Price Lookup** → Server queries Crossmint for current pricing
@@ -312,7 +295,7 @@ Here's what actually happens when someone buys something:
 7. **Order Fulfillment** → Server places order with Crossmint → Amazon
 8. **Confirmation** → User gets order ID and email confirmation
 
-The beauty is that steps 6-8 happen automatically once the signature is valid.
+The steps 6-8 happen automatically once the signature is valid.
 
 ## Error Handling That Actually Helps
 
@@ -363,60 +346,6 @@ This logs:
 - Crossmint API requests/responses
 - Network RPC calls and responses
 
-### Common Server Issues
-
-**Server won't start - missing environment variables:**
-```bash
-# Server validates env vars on startup and shows specific missing variables
-pnpm start  # Will exit with clear error message
-
-# Verify .env file format
-cat .env | grep -v '^#' | grep '='
-```
-
-**Health check fails - Crossmint connection:**
-```bash
-# Test API key validity
-curl -H "X-API-Key: $CROSSMINT_API_KEY" \
-  https://staging.crossmint.com/api/2022-06-09/collections
-
-# Check environment setting
-echo "Environment: $CROSSMINT_ENVIRONMENT"
-```
-
-**Payment processing errors:**
-```bash
-# Enable debug mode for detailed payment flow logging
-DEBUG=true pnpm dev
-
-# Check treasury wallet funding
-# Verify wallet has sufficient USDC on configured networks
-
-# Validate network configuration
-echo "Networks: $CUSTOM_MIDDLEWARE_NETWORKS"
-echo "Currencies: $CUSTOM_MIDDLEWARE_CURRENCIES"
-```
-
-## Security: The Non-Negotiable Parts
-
-### Treasury Wallet Security
-- **Never commit private keys** to version control
-- **Use environment variables** for sensitive credentials
-- **Monitor wallet balances** and transaction patterns
-- **Set up alerts** for unusual activity
-
-### Payment Validation
-- **Verify signatures** against expected signer addresses
-- **Check payment amounts** match order requirements exactly
-- **Validate timeout windows** to prevent replay attacks
-- **Rate limit** to prevent abuse
-
-### Network Security
-- **Use reputable RPC endpoints** in production
-- **Have fallback RPC providers** for redundancy
-- **Monitor network congestion** and adjust timeouts
-- **Log all financial transactions** for audit trails
-
 ## Development Tools
 
 ### Payment Testing Script
@@ -446,8 +375,6 @@ npm run check-wallets
 
 ## Why This Works
 
-Traditional crypto payments fail because they put blockchain complexity on users. The x402 protocol moves that complexity to servers that can handle it properly.
-
-Users sign once, gaslessly. Servers handle network fees, transaction timing, error recovery, and order fulfillment. The result feels like traditional payments but uses crypto settlement.
-
-This server is the financial infrastructure that makes crypto-commerce feel normal. Your users get to focus on shopping, not blockchain mechanics.
+- Traditional crypto payments fail because they put blockchain complexity on users. The x402 protocol moves that complexity to servers that can handle it properly.
+- Users sign once, gaslessly. Servers handle network fees, transaction timing, error recovery, and order fulfillment. The result feels like traditional payments but uses crypto settlement.
+- This server is the financial infrastructure that makes crypto-commerce feel normal. Your users get to focus on shopping, not blockchain mechanics.
