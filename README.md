@@ -2,7 +2,7 @@
 
 > **Buy Amazon products with crypto through AI-powered conversations.** Zero gas fees, natural language interface, real shipping.
 
-Welcome to the future of crypto-commerce, where "Hey, order me that new MacBook" actually works
+Welcome to the future of crypto-commerce
 
 ## What It Does
 
@@ -16,11 +16,11 @@ Agent: *generates USDC payment signature, processes order*
 User: *receives Amazon package in 2 days*
 ```
 
-No MetaMask popups. No gas fees. No blockchain complexity. Just conversations that end with stuff showing up at your door.
+No MetaMask popups. No gas fees. No blockchain complexity.
 
 ## Architecture: The Good Parts
 
-This is a monorepo that doesn't make you want to cry:
+The monorepo structure:
 
 ```
 worldstore-agent/
