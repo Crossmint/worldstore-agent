@@ -1,8 +1,10 @@
 # XMTP Worldstore Agent
 
-> **The AI shopping assistant that speaks crypto.** Natural language Amazon orders, USDC payments, zero blockchain headaches.
+> **The AI shopping assistant that speaks crypto.** Natural language Amazon orders with USDC payments, making onchain commerce effortless.
 
-This is the conversational brain of the Worldstore system
+Built on Base, the secure, low-cost, builder-friendly Ethereum L2 designed to bring the world onchain. This agent enables natural language commerce experiences that make onchain payments as simple as sending a text message.
+
+This agent powers conversational AI for the Worldstore onchain commerce system
 
 ## Setup
 
@@ -80,14 +82,14 @@ redis-cli ping  # Should return PONG
 **The agent automatically:**
 - Connects to XMTP network using your generated keys
 - Initializes storage (Redis preferred, filesystem fallback)
-- Migrates existing user data if upgrading storage
-- Starts processing incoming messages
+- Migrates existing user data when upgrading storage
+- Begins processing incoming messages
 
 ## User Interaction Patterns
 
 ### Profile Setup (First Time Users)
 ```
-Agent: "Hi! I'm your crypto shopping assistant. To get started,
+Agent: "Hi! I'm your onchain shopping assistant. To get started,
        I'll need your name, email, and shipping address."
 
 User: "John Doe, john@example.com, 123 Main St, NYC"
@@ -166,9 +168,9 @@ Instead of immediately sending wallet requests when funds are insufficient, the 
 const insufficientFundsResponse = {
   content: "You need $89.99 USDC but only have $23.45",
   actions: [
-    { label: "💸 Add Funds Now", intent: "fund_wallet" },
-    { label: "❌ Cancel Order", intent: "cancel_order" },
-    { label: "💰 Check Balance", intent: "check_balance" }
+    { label: "Add Funds Now", intent: "fund_wallet" },
+    { label: "Cancel Order", intent: "cancel_order" },
+    { label: "Check Balance", intent: "check_balance" }
   ]
 }
 ```

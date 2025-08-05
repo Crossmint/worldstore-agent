@@ -1,15 +1,15 @@
 # x402 Facilitator Server
 
-This is where the magic happens - a custom x402 payment facilitator
+A custom x402 payment facilitator that enables gasless onchain payments
 
 ## What It Solves
 
 The usual payment flow
 1. Connect wallet (3 clicks)
 2. Approve spending (transaction + gas)
-3. Wait for confirmation (30 seconds of anxiety)
+3. Wait for confirmation (confirmation wait times)
 4. Actually pay (another transaction + more gas)
-5. Hope the merchant's system doesn't timeout
+5. Risk of merchant system timeouts
 
 **This server eliminates all of that.** Users sign once, gaslessly. The facilitator handles everything else.
 
@@ -20,9 +20,9 @@ The x402 protocol is quite simple:
 2. **Client signs authorization** → No blockchain interaction, just a signature
 3. **Client retries with signature** → Server executes payment and fulfills order
 
-> **💡 Multi-Currency Payment Support**
+> **Multi-Currency Payment Support**
 >
-> **Current limitation**: x402 protocol restricts payments to EIP-3009 tokens (USDC only). For multi-currency support, you'll need to bypass x402.
+> **Current limitation**: x402 protocol currently supports EIP-3009 compatible tokens, primarily USDC. For multi-currency support, you'll need to bypass x402.
 >
 > **The details**:
 > - x402 enables gasless payments but only supports USDC
@@ -31,10 +31,10 @@ The x402 protocol is quite simple:
 >
 > **Implementation**: Skip the x402 middleware for multi-currency flows. Your users will handle gas fees, but you gain full token flexibility.
 >
-> **Need help with this setup?** [Contact our team](mailto:support@crossmint.io)—we've helped other developers implement multi-currency flows and can walk you through the specifics.
+> **Need help with this setup?** [Contact our team](https://t.me/crossmintdevs) - we've helped other developers implement multi-currency flows and can walk you through the specifics.
 
 ```
-Traditional Crypto Payment:          x402 Payment:
+Traditional Onchain Payment:         x402 Payment:
 
 User → MetaMask popup                User → Sign once (gasless)
 User → Approve transaction           Server → Execute when ready
@@ -45,9 +45,9 @@ User → Hope it works
 
 ## Why Build a Custom Facilitator?
 
-The official x402 facilitator works great but only with Base and USDC. The custom facilitator allows the following features:
+The official x402 facilitator works well with Base and USDC. The custom facilitator extends functionality with these additional features:
 
-- **Multi-network support** (Ethereum, Polygon, Arbitrum, not just Base)
+- **Multi-network support** (Base, Ethereum, Polygon, Arbitrum)
 - **Direct e-commerce integration** (Crossmint → Amazon)
 - **Flexible fee structures** (because business models matter)
 - **Production-ready error handling** (because things break)
@@ -64,7 +64,7 @@ src/
 └── utils/           # Logging and helpers (actual useful utilities)
 ```
 
-Clean, boring, and maintainable. Just how payment processing should be.
+Clean, reliable, and maintainable architecture for production payment processing.
 
 ## Server Setup
 
@@ -135,13 +135,13 @@ pnpm start  # Will exit with clear error if env vars missing
 
 **Server startup logs should show:**
 ```
-🔧 x402 Configuration Summary:
+Configuration:
    Networks: ethereum-sepolia, base-sepolia
    Currencies: usdc
 
-✓ Server running on port 3000
-✓ Treasury wallet configured: 0x...
-✓ Ready to process x402 payments
+[OK] Server running on port 3000
+[OK] Treasury wallet configured: 0x...
+[OK] Ready to process x402 payments
 ```
 
 ## The x402 Payment Dance
@@ -154,7 +154,7 @@ Client asks to buy something, server responds with "Payment Required" and tells 
 ### Step 2: Payment Execution
 Client comes back with a signature, server executes the payment and fulfills the order.
 
-That's it!
+This streamlined flow reduces friction while maintaining security.
 
 ## API Reference: The Important Parts
 
@@ -375,6 +375,6 @@ npm run check-wallets
 
 ## Why This Works
 
-- Traditional crypto payments fail because they put blockchain complexity on users. The x402 protocol moves that complexity to servers that can handle it properly.
-- Users sign once, gaslessly. Servers handle network fees, transaction timing, error recovery, and order fulfillment. The result feels like traditional payments but uses crypto settlement.
-- This server is the financial infrastructure that makes crypto-commerce feel normal. Your users get to focus on shopping, not blockchain mechanics.
+- Traditional onchain payments fail because they put blockchain complexity on users. The x402 protocol moves that complexity to servers that can handle it properly.
+- Users sign once, gaslessly. Servers handle network fees, transaction timing, error recovery, and order fulfillment. The result feels like traditional payments but uses onchain settlement.
+- This server is the financial infrastructure that makes onchain commerce feel normal. Your users get to focus on shopping, not blockchain mechanics.
