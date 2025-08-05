@@ -81,6 +81,17 @@ redis-cli ping   # Should return PONG; only required if running redis-cli locall
 
 If any of these fail, fix them before continuing. The system won't work with missing dependencies.
 
+> **Base Wallet Integration Note**
+> 
+> This XMTP bot is optimized for Coinbase's Base Wallet, leveraging two specialized content types that enhance the chat experience:
+> 
+> - **Quick Actions codec**: Enables interactive buttons and commands within chat
+> - **Intent codec**: Handles transaction intents and wallet interactions
+> 
+> While your bot works with any XMTP client, Base Wallet users get the full interactive experience with these enhanced message types.
+> 
+> **Learn more**: Complete codec documentation and implementation examples at [Base App Chat Agents Guide](https://docs.base.org/base-app/guides/chat-agents#base-app-content-types)
+
 ---
 
 ## Component Deep Dive
