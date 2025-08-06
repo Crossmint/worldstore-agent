@@ -8,6 +8,7 @@ import { loadUserProfile } from "@helpers/loadUserProfile";
 import { getMissingProfileFields } from "@helpers/getMissingProfileFields";
 import { saveUserProfile } from "@helpers/saveUserProfile";
 import { getWalletClientForUser } from "@helpers/getWalletClientForUser";
+import { getHostWalletAddress } from "@helpers/getHostWalletAddress";
 import { readProfileToolSchema, profileToolSchema } from "../types";
 
 export const editProfileTool = (): StructuredToolInterface => {
@@ -78,6 +79,25 @@ For addresses, parse into structured shippingAddress format:
             orderHistory: [],
             hostWalletAddress: "",
           };
+        }
+
+        // Sync hostWalletAddress if it's missing (e.g., after profile deletion)
+        if (!currentProfile.hostWalletAddress) {
+          try {
+            logger.profile("Syncing hostWallet address from inbox state", { userInboxId });
+            currentProfile.hostWalletAddress = await getHostWalletAddress(userInboxId);
+            logger.profile("Successfully synced hostWallet address", { 
+              userInboxId, 
+              hostWalletAddress: `${currentProfile.hostWalletAddress.substring(0, 6)}...${currentProfile.hostWalletAddress.slice(-4)}`
+            });
+          } catch (error) {
+            logger.error("Failed to sync hostWallet address", {
+              userInboxId,
+              error: error instanceof Error ? error.message : String(error),
+            });
+            // Continue with profile editing even if hostWallet sync fails
+            // The hostWallet will be synced later during conversation processing
+          }
         }
 
         // If no explicit parameters provided, return guidance
