@@ -13,3 +13,5 @@ Build a crypto-commerce platform with AI chat, gasless USDC payments, and Amazon
 ---
 
 **Ready to begin?** Choose your starting point above and start building the future of conversational commerce.
+
+Join our [Telegram community](https://t.me/crossmintdevs) for support and updates.
