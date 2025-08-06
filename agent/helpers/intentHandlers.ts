@@ -25,6 +25,12 @@ export interface IntentHandlerContext {
     userProfile: UserProfile
   ) => Promise<void>;
   saveUserProfile: (profile: UserProfile) => Promise<void>;
+  actionMenuFactory: {
+    sendWalletActionMenu: (
+      conversation: Conversation,
+      userInboxId: string
+    ) => Promise<void>;
+  };
   xmtpClient: {
     preferences: {
       inboxStateFromInboxIds: (
@@ -200,25 +206,42 @@ export class IntentHandler {
         await this.context.handleBalanceCheck(conversation, userInboxId);
         return true;
 
+      case "top-up-5":
+        await this.handleTopUp(conversation, userInboxId);
+        return true;
+
       default:
         return false;
     }
   }
 
-    async handleAssistantActivation(actionId: string): Promise<boolean> {
+  async handleAssistantActivation(actionId: string): Promise<boolean> {
     const { conversation, userInboxId, setUserContext } = this.context;
 
     // Handle special cases with dedicated methods
     if (actionId === "profile-management") {
-      return await this.handleProfileManagementActivation(conversation, userInboxId, setUserContext);
+      return await this.handleProfileManagementActivation(
+        conversation,
+        userInboxId,
+        setUserContext
+      );
     }
 
     if (actionId === "wallet-management") {
-      return await this.handleWalletManagementActivation(conversation, userInboxId, setUserContext);
+      return await this.handleWalletManagementActivation(
+        conversation,
+        userInboxId,
+        setUserContext
+      );
     }
 
     // Handle generic assistant activation
-    return await this.handleGenericAssistantActivation(actionId, conversation, userInboxId, setUserContext);
+    return await this.handleGenericAssistantActivation(
+      actionId,
+      conversation,
+      userInboxId,
+      setUserContext
+    );
   }
 
   private async handleProfileManagementActivation(
@@ -249,22 +272,12 @@ What would you like to do with your profile?`;
     userInboxId: string,
     setUserContext: (id: string, context: UserContextType) => void
   ): Promise<boolean> {
-    setUserContext(userInboxId, "wallet");
-
-    try {
-      const userProfile = await this.context.loadUserProfile(userInboxId);
-      const walletDisplay = await this.formatWalletDisplay(userProfile);
-      const fullMessage = `${ASSISTANT_MESSAGES.wallet}${walletDisplay}
-
-What would you like to do with your wallet?`;
-
-      await conversation.send(fullMessage);
-      return true;
-    } catch {
-      // Fallback to basic message if wallet loading fails
-      await conversation.send(ASSISTANT_MESSAGES.wallet);
-      return true;
-    }
+    setUserContext(userInboxId, "menu");
+    await this.context.actionMenuFactory.sendWalletActionMenu(
+      conversation,
+      userInboxId
+    );
+    return true;
   }
 
   private async handleGenericAssistantActivation(
@@ -297,6 +310,43 @@ What would you like to do with your wallet?`;
     return false;
   }
 
+  private async handleTopUp(
+    conversation: Conversation,
+    userInboxId: string
+  ): Promise<void> {
+    try {
+      const userProfile = await this.context.loadUserProfile(userInboxId);
+      if (!userProfile?.walletAddress) {
+        await conversation.send(
+          "❌ No wallet address found. Please complete your profile first."
+        );
+        return;
+      }
+
+      await conversation.send("💸 Initiating top-up with $5 USDC...");
+
+      // Create funding data for $5 top-up
+      const fundingData = {
+        shortfall: "5000000", // 5 USDC in smallest unit (6 decimals)
+        current: "0.0", // We don't know current balance in this context
+        required: "5.0",
+        asin: "TOP-UP", // Special identifier for top-up
+        hostWalletAddress: userProfile.hostWalletAddress,
+        hostWalletBalance: "0.0", // Will be checked during actual transfer
+      };
+
+      await this.context.sendActualFundingRequest({
+        sender: userProfile.hostWalletAddress,
+        receiver: userProfile.walletAddress,
+        fundingData,
+        conversation,
+      });
+    } catch (error) {
+      await conversation.send("❌ Error processing top-up. Please try again.");
+      console.error("Top-up error:", error);
+    }
+  }
+
   private formatProfileDisplay(userProfile: UserProfile | null): string {
     if (!userProfile) {
       return `
@@ -313,7 +363,9 @@ What would you like to do with your wallet?`;
       ? `${address.line1}${address.line2 ? ` ${address.line2}` : ""}, ${address.city}, ${address.state} ${address.postalCode}, ${address.country || "US"}`
       : "Not set";
 
-    const profileStatus = userProfile.isComplete ? "✅ COMPLETE" : "❌ INCOMPLETE";
+    const profileStatus = userProfile.isComplete
+      ? "✅ COMPLETE"
+      : "❌ INCOMPLETE";
 
     return `
 📋 Your Current Profile Status: ${profileStatus}
@@ -325,76 +377,6 @@ What would you like to do with your wallet?`;
 • Wallet Address: ${userProfile.walletAddress || "Not created"}
 
 ${!userProfile.isComplete ? "🚨 Your profile is incomplete. I can help you add missing information." : "🎉 Your profile is complete - you're ready to shop!"}`;
-  }
-
-  private async formatWalletDisplay(userProfile: UserProfile | null): Promise<string> {
-    if (!userProfile) {
-      return `
-💰 Wallet Status: No Profile Found
-
-🆕 You need to create a profile first to set up your wallet. Please use the Profile Management assistant to get started.`;
-    }
-
-    if (!userProfile.walletAddress || !userProfile.hostWalletAddress) {
-      return `
-💰 Wallet Status: Setup Required
-
-⚠️ Your wallet addresses are not configured yet. Please complete your profile setup first to enable wallet functionality.`;
-    }
-
-    try {
-      return await this.getWalletBalancesDisplay(userProfile);
-    } catch {
-      return this.getWalletInfoFallback(userProfile);
-    }
-  }
-
-  private async getWalletBalancesDisplay(userProfile: UserProfile): Promise<string> {
-    // Import USDCHandler here to avoid circular imports
-    const { USDCHandler } = await import("../helpers/usdc");
-    const usdcHandler = new USDCHandler("base-sepolia");
-
-    // Get balances for both wallets in parallel
-    const [
-      [userUSDCBalance, userETHBalance],
-      [hostUSDCBalance, hostETHBalance]
-    ] = await Promise.all([
-      Promise.all([
-        usdcHandler.getUSDCBalance(userProfile.walletAddress!),
-        usdcHandler.getETHBalance(userProfile.walletAddress!)
-      ]),
-      Promise.all([
-        usdcHandler.getUSDCBalance(userProfile.hostWalletAddress),
-        usdcHandler.getETHBalance(userProfile.hostWalletAddress)
-      ])
-    ]);
-
-    const formatAddress = (addr: string) => `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}`;
-
-    return `
-💰 Your Wallet Balances on Base Sepolia:
-
-🔹 Your Wallet (${formatAddress(userProfile.walletAddress!)}):
-• ETH: ${parseFloat(userETHBalance).toFixed(6)} ETH
-• USDC: ${parseFloat(userUSDCBalance).toFixed(6)} USDC
-
-🔸 Host Wallet (${formatAddress(userProfile.hostWalletAddress)}):
-• ETH: ${parseFloat(hostETHBalance).toFixed(6)} ETH
-• USDC: ${parseFloat(hostUSDCBalance).toFixed(6)} USDC
-
-${parseFloat(userUSDCBalance) > 0 ? "✅ You have USDC available for shopping!" : "⚠️ Your wallet needs USDC to make purchases. Consider adding funds."}`;
-  }
-
-  private getWalletInfoFallback(userProfile: UserProfile): string {
-    const formatAddress = (addr: string) => `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}`;
-
-    return `
-💰 Wallet Information:
-
-🔹 Your Wallet: ${userProfile.walletAddress ? formatAddress(userProfile.walletAddress) : "Not set"}
-🔸 Host Wallet: ${userProfile.hostWalletAddress ? formatAddress(userProfile.hostWalletAddress) : "Not set"}
-
-⚠️ Unable to fetch current balances. Please try again or contact support if the issue persists.`;
   }
 
   async handleProfileManagement(actionId: string): Promise<boolean> {
@@ -470,7 +452,9 @@ ${parseFloat(userUSDCBalance) > 0 ? "✅ You have USDC available for shopping!" 
 
     // Validate ASIN format (10 characters, alphanumeric)
     if (!asin || asin.length !== 10) {
-      await conversation.send("❌ Invalid product identifier. Please try again.");
+      await conversation.send(
+        "❌ Invalid product identifier. Please try again."
+      );
       return true;
     }
 

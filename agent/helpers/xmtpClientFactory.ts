@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-vars */
 import { Client, type XmtpEnv, type DecodedMessage } from "@xmtp/node-sdk";
 import { WalletSendCallsCodec } from "@xmtp/content-type-wallet-send-calls";
+import { ReactionCodec } from "@xmtp/content-type-reaction";
 import { ActionsCodec } from "../lib/types/ActionsContent";
 import { IntentCodec } from "../lib/types/IntentContent";
 import {
@@ -39,6 +40,7 @@ export class XMTPClientFactory {
       env: config.environment as XmtpEnv,
       codecs: [
         new WalletSendCallsCodec(),
+        new ReactionCodec(),
         new ActionsCodec(),
         new IntentCodec(),
       ],

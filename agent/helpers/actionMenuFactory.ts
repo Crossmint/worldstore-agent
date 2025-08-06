@@ -6,6 +6,7 @@ import {
 import { AGENT_EMOJIS, FundingData } from "../lib/types";
 import { formatUnits } from "viem";
 import { logger } from "./logger";
+import { delayedSend } from "./delayUtils";
 
 export class ActionMenuFactory {
   async sendMainActionMenu(
@@ -28,17 +29,17 @@ export class ActionMenuFactory {
         },
         {
           id: "profile-management",
-          label: `${AGENT_EMOJIS.PROFILE} Manage Profile`,
+          label: `${AGENT_EMOJIS.PROFILE} Profile Assistant`,
           style: "secondary",
         },
         {
           id: "wallet-management",
-          label: `${AGENT_EMOJIS.WALLET} Manage Wallet`,
+          label: `${AGENT_EMOJIS.WALLET} Wallet Operations`,
           style: "secondary",
         },
         {
           id: "how-it-works",
-          label: "❓ How it works",
+          label: "❓ How does it work",
           style: "secondary",
         },
         {
@@ -49,7 +50,11 @@ export class ActionMenuFactory {
       ],
     };
 
-    await conversation.send(mainActions, ContentTypeActions);
+    await delayedSend(conversation, mainActions, ContentTypeActions);
+    await conversation.send(
+      "Use /help for information and support, or /menu to return here."
+    );
+    // Sync conversation to ensure the menu is sent
     await conversation.sync();
 
     logger.info("Main action menu sent", { userInboxId });
@@ -63,11 +68,6 @@ export class ActionMenuFactory {
       id: `agents-menu-${Date.now()}`,
       description: `🤖 AI Assistants\n\nChoose your assistant to help with specific tasks:`,
       actions: [
-        // {
-        //   id: "general-assistant",
-        //   label: `${AGENT_EMOJIS.GENERAL} General Assistant`,
-        //   style: "primary",
-        // },
         {
           id: "shopping-assistant",
           label: `${AGENT_EMOJIS.SHOPPING} Shopping Assistant`,
@@ -75,18 +75,16 @@ export class ActionMenuFactory {
         },
         {
           id: "profile-management",
-          label: `${AGENT_EMOJIS.PROFILE} Manage Profile`,
-          style: "secondary",
-        },
-        {
-          id: "wallet-management",
-          label: `${AGENT_EMOJIS.WALLET} Manage Wallet`,
+          label: `${AGENT_EMOJIS.PROFILE} Profile Assistant`,
           style: "secondary",
         },
       ],
     };
 
-    await conversation.send(agentsActions, ContentTypeActions);
+    await delayedSend(conversation, agentsActions, ContentTypeActions);
+    await conversation.send(
+      "Use /help for information and support, or /menu to return here."
+    );
     await conversation.sync();
 
     logger.info("Agents menu sent", { userInboxId });
@@ -113,7 +111,11 @@ export class ActionMenuFactory {
       ],
     };
 
-    await conversation.send(helpActions, ContentTypeActions);
+    // await conversation.send(helpActions, ContentTypeActions);
+    await delayedSend(conversation, helpActions, ContentTypeActions);
+    await conversation.send(
+      "Use /help for information and support, or /menu to return here."
+    );
     await conversation.sync();
 
     logger.info("Help menu sent", { userInboxId });
@@ -218,7 +220,7 @@ export class ActionMenuFactory {
       description: "🛒 Quick Buy\n\nTap any product to purchase instantly:",
       actions: products.map((product) => ({
         id: `buy:${product.asin}`,
-        label: `🛍️ ${product.title.substring(0, 40)}`, // Truncate to fit button
+        label: `🛍️ ${product.title.substring(0, 30)}`, // Truncate to fit button
         style: "primary" as const,
       })),
     };
@@ -229,7 +231,34 @@ export class ActionMenuFactory {
     logger.info("Quick buy menu sent", {
       userInboxId,
       productCount: products.length,
-      asins: products.map(p => p.asin)
+      asins: products.map((p) => p.asin),
     });
+  }
+
+  async sendWalletActionMenu(
+    conversation: Conversation,
+    userInboxId: string
+  ): Promise<void> {
+    const walletActions: ActionsContent = {
+      id: `wallet-menu-${Date.now()}`,
+      description: `${AGENT_EMOJIS.WALLET} Wallet Management\n\nChoose what you'd like to do with your wallet:`,
+      actions: [
+        {
+          id: "check-balance",
+          label: "💰 Check Balance",
+          style: "primary",
+        },
+        {
+          id: "top-up-5",
+          label: "💸 Top up with $5",
+          style: "secondary",
+        },
+      ],
+    };
+
+    await conversation.send(walletActions, ContentTypeActions);
+    await conversation.sync();
+
+    logger.info("Wallet action menu sent", { userInboxId });
   }
 }

@@ -1,89 +1,180 @@
-# x402 + Crossmint Worldstore Integration
+# x402 Facilitator Server
 
-A **custom x402 facilitator** that enables cryptocurrency payments for Amazon products via Crossmint Worldstore.
+A custom x402 payment facilitator that enables gasless onchain payments for [XMTP](https://docs.xmtp.org/) messaging applications
 
-## Overview
+## What It Solves
 
-This service implements a custom [x402 payment protocol](https://docs.cdp.coinbase.com/x402/core-concepts/how-it-works) facilitator for [Crossmint Worldstore](https://docs.crossmint.com/worldstore) integration. It provides secure, multi-network cryptocurrency payments for Amazon product purchases.
+The usual payment flow
+1. Connect wallet (3 clicks)
+2. Approve spending (transaction + gas)
+3. Wait for confirmation (confirmation wait times)
+4. Actually pay (another transaction + more gas)
+5. Risk of merchant system timeouts
 
-### What is x402?
+**This server eliminates all of that.** Users sign once, gaslessly. The facilitator handles everything else.
 
-x402 enables secure, gasless cryptocurrency payments using EIP-3009 `transferWithAuthorization`. Users authorize payments that are executed later by the facilitator, eliminating gas fees.
+## How x402 Actually Works
 
-### Why a Custom Facilitator?
+The x402 protocol is quite simple:
+1. **Client requests payment** → Server responds with 402 Payment Required
+2. **Client signs authorization** → No blockchain interaction, just a signature
+3. **Client retries with signature** → Server executes payment and fulfills order
 
-The official x402 facilitator only supports Base networks. This custom implementation provides:
-- **Multi-network support** (Ethereum, Base, Polygon, Arbitrum)
-- **Dynamic network selection** per request
-- **Seamless Crossmint integration**
-- **Configurable fee structure**
+> **Multi-Currency Payment Support**
+>
+> **Current limitation**: x402 protocol currently supports EIP-3009 compatible tokens, primarily USDC. For multi-currency support, you'll need to bypass x402.
+>
+> **The details**:
+> - x402 enables gasless payments but only supports USDC
+> - Crossmint APIs are chain/token agnostic—they work with any token you throw at them
+> - To accept other tokens: remove the 402 server response code and let API calls go through directly
+>
+> **Implementation**: Skip the x402 middleware for multi-currency flows. Your users will handle gas fees, but you gain full token flexibility.
+>
+> **Need help with this setup?** [Contact our team](https://t.me/crossmintdevs) - we've helped other developers implement multi-currency flows and can walk you through the specifics.
 
-## Prerequisites
+```
+Traditional Onchain Payment:         x402 Payment:
 
-- Node.js 18+
-- **Crossmint Credentials**: Active Crossmint account with valid API scopes
-- **Treasury Wallet Setup**: A Crossmint smart wallet created and configured as your treasury.
-- **Network Funding**: Your Crossmint treasury wallet must be funded with sufficient float funds on each network you want to support (Ethereum Sepolia, Base Sepolia, etc.).
-
-## Quick Start
-
-### Installation
-
-```bash
-git clone <repository-url>
-cd x402
-npm install
+User → MetaMask popup                User → Sign once (gasless)
+User → Approve transaction           Server → Execute when ready
+User → Pay transaction               Server → Fulfill order
+User → Wait for confirmations        User → Get product
+User → Hope it works
 ```
 
-### Configuration
+## Why Build a Custom Facilitator?
 
-Copy `env.template` to `.env` and configure:
+The official x402 facilitator works well with Base and USDC. The custom facilitator extends functionality with these additional features:
+
+- **Multi-network support** (Base, Ethereum, Polygon, Arbitrum)
+- **Direct e-commerce integration** (Crossmint → Amazon)
+- **Flexible fee structures** (because business models matter)
+- **Production-ready error handling** (because things break)
+
+> **Network Simplification:** While the payment server supports multiple networks, the XMTP agent is configured to work primarily with Base Sepolia and USDC on Base Sepolia for simplicity. This reduces complexity in wallet operations and balance checks while maintaining the core functionality. Additional networks can be added by extending the onchain tools and wallet configuration.
+
+## Architecture
+
+```
+src/
+├── config/          # Environment management (not another config framework)
+├── routes/          # Express endpoints (REST API that works)
+├── services/        # Business logic (Crossmint integration)
+└── utils/           # Logging and helpers (actual useful utilities)
+```
+
+Clean, reliable, and maintainable architecture for production payment processing.
+
+## Server Setup
+
+### Prerequisites
+- **Node.js 20+** (`node --version`)
+- **Crossmint account** with API access (sign up at crossmint.com)
+- **Crossmint treasury wallet** created and funded
+- **Basic understanding of EIP-3009** (gasless USDC payments)
+
+### Quick Start
 
 ```bash
-# Crossmint Configuration
-CROSSMINT_API_KEY=your_crossmint_api_key
+# Install dependencies (from server directory)
+pnpm install
+
+# Copy and configure environment
+cp .env.template .env
+# Edit .env with your Crossmint credentials
+
+# Start the server
+pnpm dev  # Development with auto-reload
+pnpm start  # Production mode
+```
+
+### Environment Configuration
+
+**Critical Environment Variables:**
+
+```bash
+# Crossmint Integration (required)
+CROSSMINT_API_KEY=sk_staging_...  # From Crossmint dashboard
 CROSSMINT_ENVIRONMENT=staging  # or production
-CROSSMINT_WALLET_ADDRESS=your_treasury_wallet_address
-CROSSMINT_WALLET_LOCATOR=your_treasury_wallet_locator
+CROSSMINT_WALLET_ADDRESS=0x...  # Your treasury wallet address
+CROSSMINT_WALLET_LOCATOR=email:user@domain.com:evm-smart-wallet
 
-# Custom x402 Facilitator Configuration
-CUSTOM_MIDDLEWARE_NETWORKS=ethereum-sepolia,base-sepolia,polygon-mumbai,arbitrum-sepolia
-CUSTOM_MIDDLEWARE_CURRENCIES=usdc
-
-# Order Configuration
-ORDER_FEE_PERCENTAGE=0  # additional fee percentage
-ORDER_PAYMENT_TIMEOUT_MINUTES=10  # payment timeout
+# Payment Configuration
+CUSTOM_MIDDLEWARE_NETWORKS=ethereum-sepolia,base-sepolia  # Supported chains
+CUSTOM_MIDDLEWARE_CURRENCIES=usdc  # Supported currencies
+ORDER_FEE_PERCENTAGE=0  # Additional fee (0% = no markup)
+ORDER_PAYMENT_TIMEOUT_MINUTES=10  # Payment validity window
 
 # Server Configuration
 PORT=3000
 NODE_ENV=development
-DEBUG=false
+DEBUG=false  # Set true for detailed logging
 ```
 
-### Start Server
+**How to get Crossmint credentials:**
+1. Sign up at [crossmint.com](https://crossmint.com)
+2. Create API key in dashboard
+3. Set up treasury wallet (for receiving payments)
+4. Fund treasury wallet on your target networks
+
+### Verify Server Setup
 
 ```bash
-npm start
+# Check server health
+curl http://localhost:3000/api/orders/facilitator/health
+
+# Should return status info including:
+# - Supported networks
+# - Supported currencies
+# - Treasury wallet status
+
+# Test with environment validation
+pnpm start  # Will exit with clear error if env vars missing
 ```
 
-## API Reference
+**Server startup logs should show:**
+```
+Configuration:
+   Networks: ethereum-sepolia, base-sepolia
+   Currencies: usdc
 
-### Product Locators
+[OK] Server running on port 3000
+[OK] Treasury wallet configured: 0x...
+[OK] Ready to process x402 payments
+```
 
-The API supports flexible product locators for different e-commerce platforms:
+## The x402 Payment Dance
 
-**Amazon Products:**
-- `amazon:B08N5WRWNW` - Direct ASIN reference
-- `amazon:https://www.amazon.com/dp/B01DFKC2SO` - Full Amazon URL
+This is a two-step protocol that feels like one seamless flow:
 
-**Shopify Products:**
-- `shopify:https://www.gymshark.com/products/gymshark-arrival-5-shorts-black-ss22:39786362601674` - Shopify product URL with variant ID
+### Step 1: Payment Requirements (402 Response)
+Client asks to buy something, server responds with "Payment Required" and tells them exactly what to sign.
 
-### Create Order (Step 1: Get Payment Requirements)
+### Step 2: Payment Execution
+Client comes back with a signature, server executes the payment and fulfills the order.
 
-**Endpoint:** `POST /api/orders`
+This streamlined flow reduces friction while maintaining security.
 
-**Input:**
+## API Reference: The Important Parts
+
+### Product Locators (What You Can Buy)
+
+The API accepts flexible product references:
+
+```
+Amazon Products:
+- amazon:B08N5WRWNW                                    # Direct ASIN
+- amazon:https://www.amazon.com/dp/B01DFKC2SO          # Full URL
+
+Shopify Products (future):
+- shopify:https://store.com/products/item:variant-id   # Product + variant
+```
+
+### Order Creation: The 402 Flow
+
+**POST** `/api/orders` (without X-PAYMENT header)
+
 ```json
 {
   "productLocator": "amazon:B08N5WRWNW",
@@ -91,7 +182,6 @@ The API supports flexible product locators for different e-commerce platforms:
   "physicalAddress": {
     "name": "John Doe",
     "line1": "123 Main St",
-    "line2": "Apt 4B",
     "city": "New York",
     "state": "NY",
     "postalCode": "10001",
@@ -104,42 +194,35 @@ The API supports flexible product locators for different e-commerce platforms:
 }
 ```
 
-**Response (402 Payment Required):**
+**Response: 402 Payment Required**
 ```json
 {
   "x402Version": 1,
   "error": "X-PAYMENT header is required",
-  "accepts": [
-    {
-      "scheme": "exact",
-      "network": "ethereum-sepolia",
-      "maxAmountRequired": "1800000",
-      "resource": "/api/orders",
-      "description": "Amazon product purchase via Crossmint (includes 0% fee)",
-      "mimeType": "application/json",
-      "payTo": "0x462A377C745451B0FA24F5DCC13094D0b6BBfb87",
-      "maxTimeoutSeconds": 600,
-      "asset": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
-      "extra": {
-        "name": "USDC",
-        "version": "2",
-        "orderId": "cm_order_abc123"
-      }
+  "accepts": [{
+    "scheme": "exact",
+    "network": "ethereum-sepolia",
+    "maxAmountRequired": "1800000",  // 1.80 USDC (6 decimals)
+    "payTo": "0x462...b87",          // Treasury wallet
+    "asset": "0x1c7...238",          // USDC contract
+    "maxTimeoutSeconds": 600,        // 10 minute timeout
+    "extra": {
+      "orderId": "cm_order_abc123"   // Track this order
     }
-  ]
+  }]
 }
 ```
 
-### Complete Payment (Step 2: Execute Payment)
+### Payment Execution: The Success
 
-**Endpoint:** `POST /api/orders`
+**POST** `/api/orders` (with X-PAYMENT header)
 
 **Headers:**
 ```
-X-PAYMENT: <base64-encoded-x402-payment-payload>
+X-PAYMENT: eyJ4NDAyVmVyc2lvbiI6MSwic2NoZW1lIjoi...  # Base64 payload
 ```
 
-**X-PAYMENT Payload Structure:**
+**X-PAYMENT Payload (before base64 encoding):**
 ```json
 {
   "x402Version": 1,
@@ -147,128 +230,151 @@ X-PAYMENT: <base64-encoded-x402-payment-payload>
   "network": "ethereum-sepolia",
   "payload": {
     "authorization": {
-      "from": "0x1234...",
-      "to": "0x462A377C745451B0FA24F5DCC13094D0b6BBfb87",
-      "value": "1800000",
-      "validAfter": "1703123456",
-      "validBefore": "1703127056",
-      "nonce": "0xabc123..."
+      "from": "0x1234...",           // User's wallet
+      "to": "0x462...b87",           // Treasury wallet
+      "value": "1800000",            // Exact USDC amount
+      "validAfter": "0",             // Valid immediately
+      "validBefore": "1703127056",   // Expires in 10 min
+      "nonce": "0xabc123..."         // Unique nonce
     },
-    "signature": "0xdef456..."
+    "signature": "0xdef456..."       // EIP-712 signature
   },
   "extra": {
-    "orderId": "cm_order_abc123"
+    "orderId": "cm_order_abc123"     // Match from 402 response
   }
 }
 ```
 
-**Success Response (200):**
+**Success Response: 200 OK**
 ```json
 {
-  "message": "Payment received and order fulfilled successfully, check your email for confirmation",
+  "message": "Payment received and order fulfilled successfully",
   "order": {
     "orderId": "cm_order_abc123",
-    "locale": "en-US",
-    "lineItems": [
-      {
-        "chain": "ethereum-sepolia",
-        "metadata": {
-          "productLocator": "amazon:B08N5WRWNW"
-        },
-        "delivery": {
-          "recipient": {
-            "email": "user@example.com",
-            "physicalAddress": { ... }
-          }
-        },
-        "quantity": 1
-      }
-    ],
     "quote": {
-      "totalPrice": {
-        "amount": "1.80",
-        "currency": "USD"
-      }
+      "totalPrice": { "amount": "1.80", "currency": "USD" }
     }
   },
   "fulfillment": {
     "success": true,
-    "data": {
-      "id": "tx_123",
-      "createdAt": "2024-01-01T12:00:00Z"
-    }
+    "data": { "id": "tx_123" }
   }
 }
 ```
 
-### Additional Endpoints
+### Health Check
 
-- `GET /api/orders/:orderId/status` - Check order status
-- `GET /api/orders/facilitator/health` - Facilitator health check
+**GET** `/api/orders/facilitator/health`
 
-## Payment Flow
+Returns server status and network connectivity. Use this for monitoring.
 
-1. **Generate Payment Authorization:**
-   ```bash
-   node scripts/generate-payment.mjs
-   ```
+## Treasury Wallet
 
-2. **Complete the Payment:**
-   ```bash
-   curl -X POST http://localhost:3000/api/orders \
-     -H "Content-Type: application/json" \
-     -H "X-PAYMENT: <generated-base64-payload>" \
-     -d '{ "productLocator": "amazon:B08N5WRWNW", "email": "user@example.com", ... }'
-   ```
+Your Crossmint treasury wallet is the financial engine of this system:
 
-## Supported Networks
+### What It Does
+- **Receives user USDC payments** via `transferWithAuthorization`
+- **Pays for Amazon orders** through Crossmint
+- **Handles the float** between payment and fulfillment
 
-### Testnets
-| Network | USDC Contract | RPC Endpoint |
-|---------|---------------|--------------|
-| Ethereum Sepolia | `0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238` | `https://ethereum-sepolia-rpc.publicnode.com` |
-| Base Sepolia | `0x036cbd53842c5426634e7929541ec2318f3dcf7e` | `https://base-sepolia-rpc.publicnode.com` |
-| Polygon Mumbai | `0xe6b8a5CF854791412c1f6EFC7CAf629f5Df1c747` | `https://polygon-mumbai-rpc.publicnode.com` |
-| Arbitrum Sepolia | `0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d` | `https://arbitrum-sepolia-rpc.publicnode.com` |
+### Critical Requirements
+- **Fund it properly** on each network you support
+- **Monitor balances** - orders fail when wallets are empty
+- **Secure the credentials** - this wallet handles real money
 
-### Production
-| Network | USDC Contract | RPC Endpoint |
-|---------|---------------|--------------|
-| Ethereum | `0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48` | `https://ethereum.publicnode.com` |
-| Base | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` | `https://mainnet.base.org` |
-| Polygon | `0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359` | `https://polygon-rpc.com` |
-| Arbitrum | `0xaf88d065e77c8cC2239327C5EDb3A432268e5831` | `https://arb1.arbitrum.io/rpc` |
+## Payment Flow Deep Dive
 
-## Key Features
+Here's what happens when someone buys something:
 
-- **Multi-Network Support**: Ethereum, Base, Polygon, Arbitrum (testnet + mainnet)
-- **Dynamic Network Selection**: Choose network per request
-- **EIP-3009 Integration**: Secure transferWithAuthorization payments
-- **Crossmint Worldstore**: Seamless Amazon product fulfillment
-- **Fee Management**: Configurable fee calculation and collection
-- **Production Ready**: Complete payment flow from 402 to fulfillment
+1. **Order Request** → XMTP agent sends order details
+2. **Price Lookup** → Server queries Crossmint for current pricing
+3. **402 Response** → Server tells agent exactly what payment is needed
+4. **Signature Generation** → Agent creates EIP-3009 authorization
+5. **Payment Submission** → Agent retries request with X-PAYMENT header
+6. **Payment Execution** → Server calls transferWithAuthorization on USDC contract
+7. **Order Fulfillment** → Server places order with Crossmint → Amazon
+8. **Confirmation** → User gets order ID and email confirmation
 
-## Security Considerations
+The steps 6-8 happen automatically once the signature is valid.
 
-- **Treasury Wallet Funding**: Ensure your Crossmint treasury wallet has sufficient funds on each supported network to cover order fulfillment until user payments settle
-- **API Key Security**: Secure your Crossmint API key and wallet credentials
-- **Network Security**: Use secure RPC endpoints in production
-- **Error Handling**: Implement proper error recovery mechanisms
+## Error Handling That Actually Helps
 
-## Development
+### Common Failure Modes
 
-### Project Structure
-```
-src/
-├── config/          # Configuration management
-├── routes/          # API route handlers
-├── services/        # Crossmint and x402 integration
-└── utils/           # Logging and utilities
+**Insufficient Treasury Funds:**
+```json
+{
+  "error": "Treasury wallet insufficient balance on ethereum-sepolia",
+  "details": "Need 1800000 USDC, have 500000 USDC"
+}
 ```
 
-### Testing
+**Invalid Signature:**
+```json
+{
+  "error": "Payment authorization signature invalid",
+  "details": "EIP-712 signature verification failed"
+}
+```
+
+**Network Issues:**
+```json
+{
+  "error": "Network ethereum-sepolia temporarily unavailable",
+  "details": "RPC endpoint unresponsive, try base-sepolia"
+}
+```
+
+**Order Fulfillment Failures:**
+```json
+{
+  "error": "Crossmint order failed",
+  "details": "Product unavailable or address invalid"
+}
+```
+
+### Debug Mode
+
+Enable detailed logging when things break:
 ```bash
-node scripts/generate-payment.mjs
+DEBUG=true pnpm dev
 ```
 
-Enable verbose debug logging by setting `DEBUG=true` in your environment.
+This logs:
+- x402 protocol message parsing
+- EIP-3009 signature verification steps
+- Crossmint API requests/responses
+- Network RPC calls and responses
+
+## Development Tools
+
+### Payment Testing Script
+```bash
+# Generate a test payment signature
+node scripts/generate-payment.mjs
+
+# This creates a full x402 payment payload you can use for testing
+```
+
+### Environment Validation
+```bash
+# Check that all required env vars are set
+npm run validate-env
+
+# Verify treasury wallet connectivity
+npm run check-wallets
+```
+
+### Production Checklist
+- [ ] Treasury wallets funded on all target networks
+- [ ] Crossmint API keys valid and active
+- [ ] RPC endpoints configured with fallbacks
+- [ ] Monitoring and alerting configured
+- [ ] Error handling tested with invalid payments
+- [ ] Rate limiting configured appropriately
+
+## Why This Works
+
+- Traditional onchain payments fail because they put blockchain complexity on users. The x402 protocol moves that complexity to servers that can handle it properly.
+- Users sign once, gaslessly. Servers handle network fees, transaction timing, error recovery, and order fulfillment. The result feels like traditional payments but uses onchain settlement.
+- This server is the financial infrastructure that makes onchain commerce feel normal. Your users get to focus on shopping, not blockchain mechanics.

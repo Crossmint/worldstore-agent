@@ -1,5 +1,9 @@
 import { validateEnvironment } from "./helpers/client";
 import { Client, type DecodedMessage, type Conversation } from "@xmtp/node-sdk";
+import {
+  ContentTypeReaction,
+  type Reaction,
+} from "@xmtp/content-type-reaction";
 import { type IntentContent } from "./lib/types/IntentContent";
 import { ChatAnthropic } from "@langchain/anthropic";
 import { logger } from "./helpers/logger";
@@ -7,7 +11,8 @@ import { FundingData, UserProfile } from "./lib/types";
 import { loadUserProfile } from "@helpers/loadUserProfile";
 import { saveUserProfile } from "services/redis";
 import { getMenuType } from "@helpers/toShowMenu";
-import { UserStateManager } from "@helpers/userStateManager";
+import { delayedSend } from "@helpers/delayUtils";
+
 import { ActionMenuFactory } from "@helpers/actionMenuFactory";
 import { ConversationProcessor } from "@helpers/conversationProcessor";
 import { OrderToolWrapper } from "@helpers/orderToolWrapper";
@@ -17,6 +22,7 @@ import {
   IntentHandler,
   type IntentHandlerContext,
 } from "@helpers/intentHandlers";
+import { UserStateManager, UserContextType } from "@helpers/userStateManager";
 
 const { ANTHROPIC_API_KEY } = validateEnvironment(["ANTHROPIC_API_KEY"]);
 
@@ -106,6 +112,42 @@ class XMTPShoppingBot {
       }
       if (message.contentType?.typeId === "text") {
         const messageContent = message.content as string;
+
+        // Send automatic reaction to the received message
+        try {
+          const reactions = ["🤔", "👀", "🫡", "💫", "⚡"];
+          const randomReaction =
+            reactions[Math.floor(Math.random() * reactions.length)];
+
+          const reaction: Reaction = {
+            reference: message.id,
+            action: "added",
+            content: randomReaction,
+            schema: "unicode", // Required schema property
+          };
+
+          await conversation.send(
+            reaction as unknown as string,
+            ContentTypeReaction
+          );
+
+          logger.info("Sent automatic reaction", {
+            messageId: message.id,
+            senderInboxId: message.senderInboxId,
+            reaction: randomReaction,
+          });
+        } catch (reactionError) {
+          logger.error("Failed to send automatic reaction", {
+            error:
+              reactionError instanceof Error
+                ? reactionError.message
+                : String(reactionError),
+            messageId: message.id,
+            senderInboxId: message.senderInboxId,
+          });
+          // Continue processing even if reaction fails
+        }
+
         await conversation.sync();
         const conversationHistory = await conversation.messages();
 
@@ -125,9 +167,6 @@ class XMTPShoppingBot {
                 conversation,
                 userInboxId
               );
-              await conversation.send(
-                "Use /menu or /agents to see AI assistants, or /help to return here."
-              );
               break;
 
             case "agents":
@@ -135,8 +174,14 @@ class XMTPShoppingBot {
                 conversation,
                 userInboxId
               );
-              await conversation.send(
-                "Use /help for information and support, or /menu to return here."
+              break;
+
+            case "clear":
+              // Clear user state and conversation context
+              this.userStateManager.clearAllUserState(userInboxId);
+              await delayedSend(
+                conversation,
+                "🗑️ Context cleared! Starting fresh conversation."
               );
               break;
 
@@ -145,9 +190,6 @@ class XMTPShoppingBot {
               await this.actionMenuFactory.sendMainActionMenu(
                 conversation,
                 userInboxId
-              );
-              await conversation.send(
-                "Use /help for information or /menu for AI assistants."
               );
               break;
           }
@@ -177,10 +219,7 @@ class XMTPShoppingBot {
           const handlerContext: IntentHandlerContext = {
             conversation,
             userInboxId,
-            setUserContext: (
-              id: string,
-              context: "shopping" | "general" | "profile" | "wallet" | "menu"
-            ) => {
+            setUserContext: (id: string, context: UserContextType) => {
               this.userStateManager.setUserContext(id, context);
             },
             handleBalanceCheck:
@@ -196,6 +235,7 @@ class XMTPShoppingBot {
             loadUserProfile,
             processMessageWithAgent: this.processMessageWithAgent.bind(this),
             saveUserProfile,
+            actionMenuFactory: this.actionMenuFactory,
             xmtpClient: this.xmtpClient,
           };
 
@@ -219,7 +259,8 @@ class XMTPShoppingBot {
             (await intentHandler.handleQuickReply(intentContent.actionId));
 
           if (!handled) {
-            await conversation.send(
+            await delayedSend(
+              conversation,
               `❌ Unknown action: ${intentContent.actionId}`
             );
             logger.warn("Unknown intent action", {
@@ -233,7 +274,8 @@ class XMTPShoppingBot {
             actionId: intentContent.actionId,
             userInboxId,
           });
-          await conversation.send(
+          await delayedSend(
+            conversation,
             `❌ Error processing action: ${error instanceof Error ? error.message : String(error)}`
           );
         }
