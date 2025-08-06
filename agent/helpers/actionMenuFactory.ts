@@ -15,7 +15,7 @@ export class ActionMenuFactory {
   ): Promise<void> {
     const mainActions: ActionsContent = {
       id: `main-menu-${Date.now()}`,
-      description: `Welcome to Worldstore 🌟\n\nYour AI-powered platform for Amazon shopping and Web3 services`,
+      description: `Welcome to Worldstore 🌟\n\nYour AI-powered platform for Amazon shopping`,
       actions: [
         // {
         //   id: "general-assistant",
