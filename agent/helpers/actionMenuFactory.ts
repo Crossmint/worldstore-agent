@@ -220,7 +220,7 @@ export class ActionMenuFactory {
       description: "🛒 Quick Buy\n\nTap any product to purchase instantly:",
       actions: products.map((product) => ({
         id: `buy:${product.asin}`,
-        label: `🛍️ ${product.title.substring(0, 30)}`, // Truncate to fit button
+        label: `🛍️ ${product.title.substring(0, 16)}`, // Truncate to fit button
         style: "primary" as const,
       })),
     };
