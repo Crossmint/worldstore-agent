@@ -148,7 +148,6 @@ CRITICAL: Only call when user explicitly requests to purchase a specific ASIN.`,
     },
   });
 };
-
 export const searchProductTool = (): any => {
   return new DynamicStructuredTool({
     name: "search_product",
@@ -198,7 +197,6 @@ export const searchProductTool = (): any => {
     },
   });
 };
-
 export const getUserOrderHistoryTool = (): any => {
   return new DynamicStructuredTool({
     name: "get_user_order_history",

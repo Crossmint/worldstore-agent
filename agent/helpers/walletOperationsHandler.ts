@@ -76,15 +76,15 @@ export class WalletOperationsHandler {
       const userWalletPreview = `${userProfile.walletAddress.substring(0, 6)}...${userProfile.walletAddress.slice(-4)}`;
       const hostWalletPreview = `${userProfile.hostWalletAddress.substring(0, 6)}...${userProfile.hostWalletAddress.slice(-4)}`;
 
-      let balanceMessage = `💰 Balance Report\n\n`;
+      let balanceMessage = `Your balances:\n\n`;
 
       // User Wallet Section
-      balanceMessage += `YOUR WALLET (${userWalletPreview}):\n`;
+      balanceMessage += `Maintained by me (${userWalletPreview}):\n`;
 
       // User USDC balance
       if (userUsdcBalance.status === "fulfilled") {
         const usdcAmount = parseFloat(userUsdcBalance.value);
-        balanceMessage += `💵 USDC: ${usdcAmount.toFixed(2)} USDC`;
+        balanceMessage += `- USDC: ${usdcAmount.toFixed(2)} USDC`;
 
         if (usdcAmount === 0) {
           balanceMessage += ` (No balance)\n`;
@@ -94,7 +94,7 @@ export class WalletOperationsHandler {
           balanceMessage += ` (Good balance)\n`;
         }
       } else {
-        balanceMessage += `💵 USDC: Error fetching balance\n`;
+        balanceMessage += `- USDC: Error fetching balance\n`;
         logger.error("User USDC balance fetch error", {
           error: userUsdcBalance.reason,
           userInboxId,
@@ -104,7 +104,7 @@ export class WalletOperationsHandler {
       // User ETH balance
       if (userEthBalance.status === "fulfilled") {
         const ethAmount = parseFloat(userEthBalance.value);
-        balanceMessage += `⛽ ETH: ${ethAmount.toFixed(4)} ETH`;
+        balanceMessage += `- ETH: ${ethAmount.toFixed(4)} ETH`;
 
         if (ethAmount === 0) {
           balanceMessage += ` (No gas fees available)\n`;
@@ -114,7 +114,7 @@ export class WalletOperationsHandler {
           balanceMessage += ` (Sufficient for transactions)\n`;
         }
       } else {
-        balanceMessage += `⛽ ETH: Error fetching balance\n`;
+        balanceMessage += `- ETH: Error fetching balance\n`;
         logger.error("User ETH balance fetch error", {
           error: userEthBalance.reason,
           userInboxId,
@@ -124,12 +124,12 @@ export class WalletOperationsHandler {
       balanceMessage += `\n`;
 
       // Host Wallet Section
-      balanceMessage += `HOST WALLET (${hostWalletPreview}):\n`;
+      balanceMessage += `Your Coinbase wallet (${hostWalletPreview}):\n`;
 
       // Host USDC balance
       if (hostUsdcBalance.status === "fulfilled") {
         const usdcAmount = parseFloat(hostUsdcBalance.value);
-        balanceMessage += `💵 USDC: ${usdcAmount.toFixed(2)} USDC`;
+        balanceMessage += `- USDC: ${usdcAmount.toFixed(2)} USDC`;
 
         if (usdcAmount === 0) {
           balanceMessage += ` (No balance)\n`;
@@ -139,7 +139,7 @@ export class WalletOperationsHandler {
           balanceMessage += ` (Good balance)\n`;
         }
       } else {
-        balanceMessage += `💵 USDC: Error fetching balance\n`;
+        balanceMessage += `- USDC: Error fetching balance\n`;
         logger.error("Host USDC balance fetch error", {
           error: hostUsdcBalance.reason,
           userInboxId,
@@ -149,7 +149,7 @@ export class WalletOperationsHandler {
       // Host ETH balance
       if (hostEthBalance.status === "fulfilled") {
         const ethAmount = parseFloat(hostEthBalance.value);
-        balanceMessage += `⛽ ETH: ${ethAmount.toFixed(4)} ETH`;
+        balanceMessage += `- ETH: ${ethAmount.toFixed(4)} ETH`;
 
         if (ethAmount === 0) {
           balanceMessage += ` (No gas fees available)\n`;
@@ -159,16 +159,16 @@ export class WalletOperationsHandler {
           balanceMessage += ` (Sufficient for transactions)\n`;
         }
       } else {
-        balanceMessage += `⛽ ETH: Error fetching balance\n`;
+        balanceMessage += `- ETH: Error fetching balance\n`;
         logger.error("Host ETH balance fetch error", {
           error: hostEthBalance.reason,
           userInboxId,
         });
       }
 
-      balanceMessage += `\n🌐 Network: Base Sepolia`;
-      balanceMessage += `\n📍 User Wallet: ${userProfile.walletAddress}`;
-      balanceMessage += `\n📍 Host Wallet: ${userProfile.hostWalletAddress}`;
+      balanceMessage += `\nAll balances on: Base Sepolia`;
+      balanceMessage += `\n- Address of wallet (maintained by me): ${userProfile.walletAddress}`;
+      balanceMessage += `\n- Address of your coinbase wallet: ${userProfile.hostWalletAddress}`;
 
       await conversation.send(balanceMessage);
 
