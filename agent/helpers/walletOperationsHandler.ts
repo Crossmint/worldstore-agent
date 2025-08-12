@@ -76,99 +76,110 @@ export class WalletOperationsHandler {
       const userWalletPreview = `${userProfile.walletAddress.substring(0, 6)}...${userProfile.walletAddress.slice(-4)}`;
       const hostWalletPreview = `${userProfile.hostWalletAddress.substring(0, 6)}...${userProfile.hostWalletAddress.slice(-4)}`;
 
-      let balanceMessage = `Your balances:\n\n`;
+      // Calculate totals for summary
+      let totalUsdc = 0;
+      let totalEth = 0;
+      let usdcErrors = 0;
+      let ethErrors = 0;
 
-      // User Wallet Section
-      balanceMessage += `Maintained by me (${userWalletPreview}):\n`;
-
-      // User USDC balance
+      // Get user wallet balances
+      let userUsdcAmount = 0;
+      let userEthAmount = 0;
       if (userUsdcBalance.status === "fulfilled") {
-        const usdcAmount = parseFloat(userUsdcBalance.value);
-        balanceMessage += `- USDC: ${usdcAmount.toFixed(2)} USDC`;
-
-        if (usdcAmount === 0) {
-          balanceMessage += ` (No balance)\n`;
-        } else if (usdcAmount < 1) {
-          balanceMessage += ` (Low balance)\n`;
-        } else {
-          balanceMessage += ` (Good balance)\n`;
-        }
+        userUsdcAmount = parseFloat(userUsdcBalance.value);
+        totalUsdc += userUsdcAmount;
       } else {
-        balanceMessage += `- USDC: Error fetching balance\n`;
+        usdcErrors++;
         logger.error("User USDC balance fetch error", {
           error: userUsdcBalance.reason,
           userInboxId,
         });
       }
 
-      // User ETH balance
       if (userEthBalance.status === "fulfilled") {
-        const ethAmount = parseFloat(userEthBalance.value);
-        balanceMessage += `- ETH: ${ethAmount.toFixed(4)} ETH`;
-
-        if (ethAmount === 0) {
-          balanceMessage += ` (No gas fees available)\n`;
-        } else if (ethAmount < 0.001) {
-          balanceMessage += ` (Low - may not cover gas)\n`;
-        } else {
-          balanceMessage += ` (Sufficient for transactions)\n`;
-        }
+        userEthAmount = parseFloat(userEthBalance.value);
+        totalEth += userEthAmount;
       } else {
-        balanceMessage += `- ETH: Error fetching balance\n`;
+        ethErrors++;
         logger.error("User ETH balance fetch error", {
           error: userEthBalance.reason,
           userInboxId,
         });
       }
 
-      balanceMessage += `\n`;
-
-      // Host Wallet Section
-      balanceMessage += `Your Coinbase wallet (${hostWalletPreview}):\n`;
-
-      // Host USDC balance
+      // Get host wallet balances
+      let hostUsdcAmount = 0;
+      let hostEthAmount = 0;
       if (hostUsdcBalance.status === "fulfilled") {
-        const usdcAmount = parseFloat(hostUsdcBalance.value);
-        balanceMessage += `- USDC: ${usdcAmount.toFixed(2)} USDC`;
-
-        if (usdcAmount === 0) {
-          balanceMessage += ` (No balance)\n`;
-        } else if (usdcAmount < 1) {
-          balanceMessage += ` (Low balance)\n`;
-        } else {
-          balanceMessage += ` (Good balance)\n`;
-        }
+        hostUsdcAmount = parseFloat(hostUsdcBalance.value);
+        totalUsdc += hostUsdcAmount;
       } else {
-        balanceMessage += `- USDC: Error fetching balance\n`;
+        usdcErrors++;
         logger.error("Host USDC balance fetch error", {
           error: hostUsdcBalance.reason,
           userInboxId,
         });
       }
 
-      // Host ETH balance
       if (hostEthBalance.status === "fulfilled") {
-        const ethAmount = parseFloat(hostEthBalance.value);
-        balanceMessage += `- ETH: ${ethAmount.toFixed(4)} ETH`;
-
-        if (ethAmount === 0) {
-          balanceMessage += ` (No gas fees available)\n`;
-        } else if (ethAmount < 0.001) {
-          balanceMessage += ` (Low - may not cover gas)\n`;
-        } else {
-          balanceMessage += ` (Sufficient for transactions)\n`;
-        }
+        hostEthAmount = parseFloat(hostEthBalance.value);
+        totalEth += hostEthAmount;
       } else {
-        balanceMessage += `- ETH: Error fetching balance\n`;
+        ethErrors++;
         logger.error("Host ETH balance fetch error", {
           error: hostEthBalance.reason,
           userInboxId,
         });
       }
 
-      balanceMessage += `\nAll balances on: Base Sepolia`;
-      balanceMessage += `\n- Address of wallet (maintained by me): ${userProfile.walletAddress}`;
-      balanceMessage += `\n- Address of your coinbase wallet: ${userProfile.hostWalletAddress}`;
+      // Build the message with summary first
+      let balanceMessage = `Balance Summary (Base Sepolia)\n`;
+      
+      if (usdcErrors === 0) {
+        balanceMessage += `Total USDC: ${totalUsdc.toFixed(2)} USDC\n`;
+      } else {
+        balanceMessage += `Total USDC: Error fetching some balances\n`;
+      }
+
+      if (ethErrors === 0) {
+        balanceMessage += `Total ETH: ${totalEth.toFixed(4)} ETH\n`;
+      } else {
+        balanceMessage += `Total ETH: Error fetching some balances\n`;
+      }
+
+      balanceMessage += `\nWallet Details\n\n`;
+
+      // User Wallet Section
+      balanceMessage += `Agent Wallet (${userWalletPreview})\n`;
+
+      if (userUsdcBalance.status === "fulfilled") {
+        balanceMessage += `USDC: ${userUsdcAmount.toFixed(2)}\n`;
+      } else {
+        balanceMessage += `USDC: Error fetching\n`;
+      }
+
+      if (userEthBalance.status === "fulfilled") {
+        balanceMessage += `ETH: ${userEthAmount.toFixed(4)}\n`;
+      } else {
+        balanceMessage += `ETH: Error fetching\n`;
+      }
+
+      balanceMessage += `\n`;
+
+      // Host Wallet Section  
+      balanceMessage += `Your Coinbase Wallet (${hostWalletPreview})\n`;
+
+      if (hostUsdcBalance.status === "fulfilled") {
+        balanceMessage += `USDC: ${hostUsdcAmount.toFixed(2)}\n`;
+      } else {
+        balanceMessage += `USDC: Error fetching\n`;
+      }
+
+      if (hostEthBalance.status === "fulfilled") {
+        balanceMessage += `ETH: ${hostEthAmount.toFixed(4)}\n`;
+      } else {
+        balanceMessage += `ETH: Error fetching\n`;
+      }
 
       await conversation.send(balanceMessage);
 
