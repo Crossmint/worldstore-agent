@@ -317,3 +317,107 @@ Provide the order ID that was returned when the order was placed.`,
     },
   });
 };
+
+export const fetchAmazonAsinTool = (): any => {
+  return new DynamicStructuredTool({
+    name: "fetch_amazon_asin",
+    description: `Extract Amazon product ASIN from Amazon short URLs (e.g., https://a.co/d/2TNBsOY).
+
+Use this tool to:
+- Convert Amazon short URLs to ASINs
+- Get product identifiers from shareable Amazon links
+- Extract ASINs from redirected Amazon URLs
+
+Provide the Amazon short URL and get back the 10-character ASIN (e.g., B0F83JXHRD).`,
+    schema: z.object({
+      shortUrl: z.string().describe("The Amazon short URL to extract ASIN from"),
+    }),
+    func: async ({ shortUrl }: { shortUrl: string }) => {
+      try {
+        logger.tool("fetch_amazon_asin", "Starting ASIN extraction", { shortUrl });
+
+        const userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36";
+        let finalUrl = "";
+        let asin = "";
+
+        // Try HEAD request first (faster), but fallback to GET if it fails
+        let response;
+        try {
+          response = await fetch(shortUrl, {
+            method: "HEAD",
+            redirect: "follow",
+            headers: { "User-Agent": userAgent }
+          });
+          
+          // Check if HEAD request actually worked (some URLs return 404 for HEAD but work for GET)
+          if (response.status >= 400) {
+            throw new Error(`HEAD request returned ${response.status}`);
+          }
+          
+          finalUrl = response.url;
+          logger.tool("fetch_amazon_asin", "HEAD request successful", { finalUrl });
+        } catch (error) {
+          // If HEAD fails, try GET request
+          logger.tool("fetch_amazon_asin", "HEAD failed, trying GET", { error: error.message });
+          response = await fetch(shortUrl, {
+            method: "GET",
+            redirect: "follow",
+            headers: { "User-Agent": userAgent }
+          });
+          
+          if (response.status >= 400) {
+            throw new Error(`GET request failed with status ${response.status}: ${response.statusText}`);
+          }
+          
+          finalUrl = response.url;
+          logger.tool("fetch_amazon_asin", "GET request successful", { finalUrl });
+        }
+
+        // Extract ASIN from the final URL
+        // Amazon URLs typically have ASINs in these patterns:
+        // - /dp/ASIN
+        // - /gp/product/ASIN
+        // - /product/ASIN
+        let asinMatch = finalUrl.match(/\/(?:dp|gp\/product|product)\/([A-Z0-9]{10})/i);
+        
+        if (!asinMatch && finalUrl.includes('amazon.com')) {
+          // If direct URL extraction fails, try to get the page content and extract from there
+          logger.tool("fetch_amazon_asin", "No ASIN in URL, checking page content", { finalUrl });
+          try {
+            const response = await fetch(finalUrl, {
+              method: "GET",
+              headers: { "User-Agent": userAgent }
+            });
+            const html = await response.text();
+            
+            // Look for ASIN in various places in the HTML
+            asinMatch = html.match(/(?:data-asin|"asin"|'asin')["']?\s*[:=]\s*["']?([A-Z0-9]{10})["']?/i) ||
+                       html.match(/href=["']\/dp\/([A-Z0-9]{10})/i) ||
+                       html.match(/\/gp\/product\/([A-Z0-9]{10})/i);
+          } catch (error) {
+            logger.error("Failed to fetch page content", { error: error.message });
+          }
+        }
+        
+        if (!asinMatch) {
+          logger.error("No ASIN found", { shortUrl, finalUrl });
+          return `❌ Could not extract ASIN from URL. The URL may not be a valid Amazon product link.`;
+        }
+
+        asin = asinMatch[1];
+        logger.success("ASIN extracted successfully", { shortUrl, finalUrl, asin });
+        
+        return `✅ ASIN extracted successfully: ${asin}
+
+Original short URL: ${shortUrl}
+Full Amazon URL: ${finalUrl}
+Product ASIN: ${asin}
+
+You can now use this ASIN to search for or order the product.`;
+      } catch (error) {
+        logger.error("Error extracting ASIN", { shortUrl, error });
+        return `❌ Error extracting ASIN from URL: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      }
+    },
+  });
+};
