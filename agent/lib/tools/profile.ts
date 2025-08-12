@@ -223,6 +223,61 @@ Profile ID: ${currentProfile.inboxId}`;
   }) as StructuredToolInterface;
 };
 
+export const getWalletAddressesTool = (): StructuredToolInterface => {
+  return new DynamicStructuredTool({
+    name: "get_wallet_addresses",
+    description: `Get the user's wallet addresses - both agent-managed wallet and Coinbase host wallet.
+
+This tool returns:
+- Agent wallet address: The deterministic wallet managed by the agent for transactions
+- Host wallet address: The user's Coinbase wallet address for funding and transfers
+
+Use this tool when you need to:
+- Display wallet addresses to the user
+- Reference wallet addresses for transactions
+- Check which wallets are available for the user
+
+Returns addresses only if the user profile exists and is complete.`,
+    schema: readProfileToolSchema,
+    func: async ({ userInboxId }: z.infer<typeof readProfileToolSchema>) => {
+      try {
+        logger.tool("get_wallet_addresses", "Getting wallet addresses", { userInboxId });
+
+        const currentProfile = await loadUserProfile(userInboxId);
+
+        if (!currentProfile) {
+          return `❌ No profile exists for this user. Please complete your profile first.`;
+        }
+
+        if (!currentProfile.isComplete) {
+          return `❌ Profile is incomplete. Please complete your profile to access wallet addresses.`;
+        }
+
+        const agentWallet = currentProfile.walletAddress || "Not created";
+        const hostWallet = currentProfile.hostWalletAddress || "Not set";
+
+        const agentPreview = agentWallet !== "Not created" 
+          ? `${agentWallet.substring(0, 6)}...${agentWallet.slice(-4)}`
+          : "Not created";
+        
+        const hostPreview = hostWallet !== "Not set" 
+          ? `${hostWallet.substring(0, 6)}...${hostWallet.slice(-4)}`
+          : "Not set";
+
+        return `Wallet Addresses
+
+Agent Wallet (${agentPreview}): ${agentWallet}
+Coinbase Wallet (${hostPreview}): ${hostWallet}
+
+Network: Base Sepolia`;
+      } catch (error) {
+        logger.error("Error getting wallet addresses", error);
+        return "❌ Error retrieving wallet addresses. Please try again.";
+      }
+    },
+  }) as StructuredToolInterface;
+};
+
 export const deleteProfileTool = (): StructuredToolInterface => {
   return new DynamicStructuredTool({
     name: "delete_profile",
