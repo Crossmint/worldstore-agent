@@ -14,7 +14,7 @@
     "test:api": "curl -s http://localhost:3000/health | json_pp"
   },
   "dependencies": {
-    "@coinbase/x402": "^0.4.3",
+    "@coinbase/x402": ">=0.5.2",
     "@crossmint/wallets-sdk": "^0.11.5",
     "axios": "^1.6.0",
     "cors": "^2.8.5",
