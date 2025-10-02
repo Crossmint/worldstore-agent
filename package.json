@@ -27,6 +27,11 @@
   "devDependencies": {
     "concurrently": "^8.2.2"
   },
+  "pnpm": {
+    "overrides": {
+      "@solana/web3.js": "2.0.0"
+    }
+  },
   "engines": {
     "node": ">=20",
     "pnpm": ">=8.0.0"
