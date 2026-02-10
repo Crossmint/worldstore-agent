@@ -16,11 +16,11 @@
   "dependencies": {
     "@coinbase/x402": "^0.6.4",
     "@crossmint/wallets-sdk": "^0.11.5",
-    "axios": "^1.12.0",
+    "axios": "^1.13.5",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "ethers": "^6.15.0",
-    "express": "^4.18.2",
+    "express": "^4.22.0",
     "helmet": "^7.1.0",
     "joi": "^17.11.0",
     "uuid": "^9.0.1"

@@ -41,5 +41,14 @@
   ],
   "author": "Crossmint",
   "license": "MIT",
-  "packageManager": "pnpm@9.15.2+sha1.0ffb02f94047016ec7e088030337455b4c94bb34"
+  "packageManager": "pnpm@9.15.2+sha1.0ffb02f94047016ec7e088030337455b4c94bb34",
+  "pnpm": {
+    "overrides": {
+      "jws": ">=4.0.1",
+      "fast-xml-parser": ">=5.3.4",
+      "preact": ">=10.28.2",
+      "h3": ">=1.15.5",
+      "qs": ">=6.14.1"
+    }
+  }
 }
